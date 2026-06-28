@@ -7,10 +7,10 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
-import { CustomBack } from '../../../src/components/common/CustomBack';
-import { CustomButton } from '../../../src/components/common/CustomButton';
-import { StepIndicator } from '../../../src/components/common/StepIndicator';
-import { PhotoUploadCard } from '../../../src/components/common/PhotoUploadCard';
+import { CustomBack } from '../../src/components/common/CustomBack';
+import { CustomButton } from '../../src/components/common/CustomButton';
+import { StepIndicator } from '../../src/components/common/StepIndicator';
+import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 
 // Dummy car image to simulate a picked photo
 const DUMMY_CAR_IMG = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800';
@@ -53,7 +53,7 @@ export default function ChecklistStep2Screen() {
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
       
       {/* Header with Back Button */}
-      <View className="px-4 pt-2 pb-2 bg-[#F8FAFC] z-10">
+      <View className="px-4 pt-2 pb-2 z-10">
         <CustomBack color="#101928" />
       </View>
 

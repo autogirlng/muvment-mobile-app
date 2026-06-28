@@ -7,12 +7,12 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
-import { CustomBack } from '../../../src/components/common/CustomBack';
-import { CustomButton } from '../../../src/components/common/CustomButton';
-import { LocationItem } from '../../../src/components/common/LocationItem';
-import { StepIndicator } from '../../../src/components/common/StepIndicator';
-import { VehicleCard } from '../../../src/components/common/VehicleCard';
-import { MOCK_TRIP_DETAILS } from '../../../src/data/mockData';
+import { CustomBack } from '../../src/components/common/CustomBack';
+import { CustomButton } from '../../src/components/common/CustomButton';
+import { LocationItem } from '../../src/components/common/LocationItem';
+import { StepIndicator } from '../../src/components/common/StepIndicator';
+import { VehicleCard } from '../../src/components/common/VehicleCard';
+import { MOCK_TRIP_DETAILS } from '../../src/data/mockData';
 
 export default function ChecklistStep1Screen() {
   const trip = MOCK_TRIP_DETAILS;

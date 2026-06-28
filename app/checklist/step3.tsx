@@ -1,4 +1,4 @@
-// app/(dashboard)/checklist/step3.tsx
+// app/checklist/step3.tsx
 import React, { useState } from 'react';
 import { 
   View, 
@@ -11,10 +11,10 @@ import { router } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
-import { CustomBack } from '../../../src/components/common/CustomBack';
-import { CustomButton } from '../../../src/components/common/CustomButton';
-import { StepIndicator } from '../../../src/components/common/StepIndicator';
-import { PhotoUploadCard } from '../../../src/components/common/PhotoUploadCard';
+import { CustomBack } from '../../src/components/common/CustomBack';
+import { CustomButton } from '../../src/components/common/CustomButton';
+import { StepIndicator } from '../../src/components/common/StepIndicator';
+import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 
 const DUMMY_INTERIOR_IMG = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800';
 
@@ -72,7 +72,7 @@ export default function ChecklistStep3Screen() {
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
       
       {/* Header with Back Button */}
-      <View className="px-4 pt-2 pb-2 bg-[#F8FAFC] z-10">
+      <View className="px-4 pt-2 pb-2 z-10">
         <CustomBack color="#101928" />
       </View>
 

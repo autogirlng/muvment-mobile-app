@@ -9,10 +9,10 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
-import { TimelineTracker } from '../../../src/components/common/TimelineTracker';
-import { LocationItem } from '../../../src/components/common/LocationItem';
-import { CallModal } from '../../../src/components/common/CallModal';
-import { FLAT_TRIPS_DATA, MOCK_TRIP_DETAILS } from '../../../src/data/mockData';
+import { TimelineTracker } from '../../src/components/common/TimelineTracker';
+import { LocationItem } from '../../src/components/common/LocationItem';
+import { CallModal } from '../../src/components/common/CallModal';
+import { FLAT_TRIPS_DATA, MOCK_TRIP_DETAILS } from '../../src/data/mockData';
 
 const getStatusFromBadges = (badges: { label: string }[]) => {
   const labels = badges.map((badge) => badge.label.toUpperCase());

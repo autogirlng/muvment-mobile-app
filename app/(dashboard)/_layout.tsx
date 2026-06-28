@@ -51,34 +51,6 @@ export default function DashboardLayout() {
           tabBarIcon: ({ color }) => <Feather name="settings" size={24} color={color} /> 
         }} 
       />
-      <Tabs.Screen
-        name="checklist/step1"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="checklist/step2"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="checklist/step3"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="checklist/step4"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="checklist/step5"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="checklist/step6"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="trip/[id]"
-        options={{ href: null }}
-      />
     </Tabs>
   );
 }

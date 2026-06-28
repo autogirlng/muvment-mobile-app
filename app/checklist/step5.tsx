@@ -10,10 +10,10 @@ import {
 import { router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
-import { CustomBack } from '../../../src/components/common/CustomBack';
-import { CustomButton } from '../../../src/components/common/CustomButton';
-import { NumberedListItem } from '../../../src/components/common/NumberedListItem';
-import { StepIndicator } from '../../../src/components/common/StepIndicator';
+import { CustomBack } from '../../src/components/common/CustomBack';
+import { CustomButton } from '../../src/components/common/CustomButton';
+import { NumberedListItem } from '../../src/components/common/NumberedListItem';
+import { StepIndicator } from '../../src/components/common/StepIndicator';
 
 // Dummy selfie image to simulate a captured photo
 const DUMMY_SELFIE_IMG = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400';
@@ -37,7 +37,7 @@ export default function ChecklistStep5Screen() {
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
       
       {/* Header with Back Button */}
-      <View className="px-4 pt-2 pb-2 bg-[#F8FAFC] z-10">
+      <View className="px-4 pt-2 pb-2 z-10">
         <CustomBack color="#101928" />
       </View>
 
