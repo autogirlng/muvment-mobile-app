@@ -7,7 +7,7 @@ import {
   ScrollView,
   TextInput
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
@@ -19,6 +19,9 @@ import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 const DUMMY_INTERIOR_IMG = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800';
 
 export default function ChecklistStep3Screen() {
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
+  const activeTripId = tripId ?? '1';
+
   // Track all required interior photos
   const [photos, setPhotos] = useState({
     dashboard: null as string | null,
@@ -190,7 +193,7 @@ export default function ChecklistStep3Screen() {
           title="Next"
           activeOpacity={0.8}
           disabled={!isNextEnabled}
-          onPress={() => router.push('/checklist/step4')}
+          onPress={() => router.push(`/checklist/step4?tripId=${encodeURIComponent(activeTripId)}`)}
         />
       </View>
 

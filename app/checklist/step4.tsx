@@ -6,7 +6,7 @@ import {
   SafeAreaView, 
   ScrollView
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { CustomButton } from '../../src/components/common/CustomButton';
@@ -17,6 +17,9 @@ import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 const DUMMY_HEALTH_IMG = 'https://images.unsplash.com/photo-1606523293883-7182283a0058?auto=format&fit=crop&q=80&w=800';
 
 export default function ChecklistStep4Screen() {
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
+  const activeTripId = tripId ?? '1';
+
   // Track all required health check photos
   const [photos, setPhotos] = useState({
     oilLevel: null as string | null,
@@ -98,7 +101,7 @@ export default function ChecklistStep4Screen() {
           title="Next"
           activeOpacity={0.8}
           disabled={!isNextEnabled}
-          onPress={() => router.push('/checklist/step5')}
+          onPress={() => router.push(`/checklist/step5?tripId=${encodeURIComponent(activeTripId)}`)}
         />
       </View>
 

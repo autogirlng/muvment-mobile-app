@@ -5,7 +5,7 @@ import {
   SafeAreaView, 
   ScrollView
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { CustomButton } from '../../src/components/common/CustomButton';
@@ -16,6 +16,9 @@ import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 const DUMMY_CAR_IMG = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800';
 
 export default function ChecklistStep2Screen() {
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
+  const activeTripId = tripId ?? '1';
+
   // State for required photos
   const [requiredPhotos, setRequiredPhotos] = useState({
     right: DUMMY_CAR_IMG, // Pre-filled for preview purposes
@@ -142,7 +145,7 @@ export default function ChecklistStep2Screen() {
           title="Next"
           activeOpacity={0.8}
           disabled={!isNextEnabled}
-          onPress={() => router.push('/checklist/step3')}
+          onPress={() => router.push(`/checklist/step3?tripId=${encodeURIComponent(activeTripId)}`)}
         />
       </View>
 

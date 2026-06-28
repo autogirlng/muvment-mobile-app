@@ -7,7 +7,7 @@ import {
   ScrollView,
   ImageBackground
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
 import { CustomBack } from '../../src/components/common/CustomBack';
@@ -19,6 +19,8 @@ import { StepIndicator } from '../../src/components/common/StepIndicator';
 const DUMMY_SELFIE_IMG = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400';
 
 export default function ChecklistStep5Screen() {
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
+  const activeTripId = tripId ?? '1';
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
 
   const requirements = [
@@ -127,7 +129,7 @@ export default function ChecklistStep5Screen() {
           title="Next"
           activeOpacity={0.8}
           disabled={!selfieUri}
-          onPress={() => router.push('/checklist/step6')}
+          onPress={() => router.push(`/checklist/step6?tripId=${encodeURIComponent(activeTripId)}`)}
         />
       </View>
 

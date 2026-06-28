@@ -101,7 +101,11 @@ const getStatusStyle = (status: string) => {
 };
 
 export default function TripDetailScreen() {
-  const { id, stage } = useLocalSearchParams<{ id?: string; stage?: string }>();
+  const { id, stage, pickupReady } = useLocalSearchParams<{
+    id?: string;
+    stage?: string;
+    pickupReady?: string;
+  }>();
   const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === id);
   const selectedStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
   const selectedStage = getStageFromParam(stage) ?? getStageFromStatus(selectedStatus);
@@ -126,6 +130,8 @@ export default function TripDetailScreen() {
     },
   };
   const statusStyle = getStatusStyle(trip.status);
+  const routeTripId = id ?? selectedTrip?.id ?? '1';
+  const isPickupTimeReached = pickupReady === 'true' || trip.status === 'RUNNING LATE';
 
   const [isCallModalVisible, setIsCallModalVisible] = useState(false);
 
@@ -136,6 +142,41 @@ export default function TripDetailScreen() {
       {title}
     </Text>
   );
+
+  const getActionConfig = () => {
+    switch (trip.status) {
+      case 'CHECKED IN':
+        return {
+          title: 'Proceed to Pickup',
+          disabled: false,
+          showPickupTooltip: false,
+          onPress: () => router.push(`/trip/${encodeURIComponent(routeTripId)}?stage=awaiting-pickup`),
+        };
+      case 'AWAITING PICKUP':
+        return {
+          title: 'Start Ride',
+          disabled: !isPickupTimeReached,
+          showPickupTooltip: !isPickupTimeReached,
+          onPress: () => console.log('Start ride'),
+        };
+      case 'RUNNING LATE':
+        return {
+          title: 'Start Ride',
+          disabled: false,
+          showPickupTooltip: false,
+          onPress: () => console.log('Start ride'),
+        };
+      default:
+        return {
+          title: 'Start Pre-Ride Checklist',
+          disabled: false,
+          showPickupTooltip: false,
+          onPress: () => router.push(`/checklist/step1?tripId=${encodeURIComponent(routeTripId)}`),
+        };
+    }
+  };
+
+  const actionConfig = getActionConfig();
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
@@ -289,14 +330,29 @@ export default function TripDetailScreen() {
           ))}
         </View>
 
+        {actionConfig.showPickupTooltip && (
+          <View className="bg-[#F2F4F7] border border-[#E4E7EC] rounded-xl px-4 py-3 mt-8 mb-3 flex-row items-center">
+            <Ionicons name="information-circle-outline" size={18} color="#667185" />
+            <Text className="font-inter text-[#667185] text-[13px] ml-2 flex-1">
+              Pickup time not reached.
+            </Text>
+          </View>
+        )}
+
         <TouchableOpacity
           activeOpacity={0.8}
-          className="w-full bg-[#0673FF] h-[52px] rounded-xl flex-row items-center justify-center shadow-sm mt-8 mb-6"
-          onPress={() => router.push('/checklist/step1')}
+          disabled={actionConfig.disabled}
+          className={`w-full h-[52px] rounded-xl flex-row items-center justify-center shadow-sm mb-6 ${
+            actionConfig.disabled ? 'bg-[#D0D5DD]' : 'bg-[#0673FF]'
+          } ${actionConfig.showPickupTooltip ? '' : 'mt-8'}`}
+          onPress={actionConfig.onPress}
         >
           <Text className="text-white font-inter font-medium text-base">
-            Start Pre-Ride Checklist
+            {actionConfig.title}
           </Text>
+          {actionConfig.showPickupTooltip && (
+            <Ionicons name="information-circle-outline" size={18} color="#667185" className="ml-2" />
+          )}
         </TouchableOpacity>
 
       </ScrollView>

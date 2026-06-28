@@ -6,7 +6,7 @@ import {
   SafeAreaView, 
   ScrollView
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
@@ -17,6 +17,8 @@ import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { SummaryCard } from '../../src/components/common/SummaryCard';
 
 export default function ChecklistStep6Screen() {
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
+  const activeTripId = tripId ?? '1';
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
 
   const handleSubmit = () => {
@@ -33,8 +35,8 @@ export default function ChecklistStep6Screen() {
       topOffset: 60,
     });
 
-    // 3. Route back to the home dashboard
-    router.replace('/home'); 
+    // 3. Route back to the trip in the checked-in stage.
+    router.replace(`/trip/${encodeURIComponent(activeTripId)}?stage=checked-in`);
   };
 
   return (

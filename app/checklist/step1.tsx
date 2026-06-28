@@ -5,7 +5,7 @@ import {
   SafeAreaView, 
   ScrollView
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { CustomButton } from '../../src/components/common/CustomButton';
@@ -15,7 +15,9 @@ import { VehicleCard } from '../../src/components/common/VehicleCard';
 import { MOCK_TRIP_DETAILS } from '../../src/data/mockData';
 
 export default function ChecklistStep1Screen() {
+  const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const trip = MOCK_TRIP_DETAILS;
+  const activeTripId = tripId ?? '1';
   const [expandedLocation, setExpandedLocation] = useState<'pickup' | 'dropoff' | null>(null);
 
   const toggleLocation = (location: 'pickup' | 'dropoff') => {
@@ -84,7 +86,7 @@ export default function ChecklistStep1Screen() {
         <CustomButton
           title="Next"
           activeOpacity={0.8}
-          onPress={() => router.push('/checklist/step2')} // Will update this to route to step 2 next!
+          onPress={() => router.push(`/checklist/step2?tripId=${encodeURIComponent(activeTripId)}`)}
         />
       </View>
 
