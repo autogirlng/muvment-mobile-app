@@ -12,12 +12,19 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { TimelineTracker } from '../../src/components/common/TimelineTracker';
 import { LocationItem } from '../../src/components/common/LocationItem';
 import { CallModal } from '../../src/components/common/CallModal';
-import { FLAT_TRIPS_DATA, MOCK_TRIP_DETAILS } from '../../src/data/mockData';
+import {
+  FLAT_TRIPS_DATA,
+  MOCK_TRIP_DETAILS,
+  MOCK_TRIP_DETAILS_BY_STAGE,
+} from '../../src/data/mockData';
+import type { TripStageKey } from '../../src/data/mockData';
 
 const getStatusFromBadges = (badges: { label: string }[]) => {
   const labels = badges.map((badge) => badge.label.toUpperCase());
 
   if (labels.includes('ONGOING')) return 'ONGOING';
+  if (labels.includes('CHECKED IN')) return 'CHECKED IN';
+  if (labels.includes('RUNNING LATE')) return 'RUNNING LATE';
   if (labels.includes('COMPLETE') || labels.includes('COMPLETED')) return 'COMPLETE';
   if (labels.includes('CANCELLED')) return 'CANCELLED';
   if (labels.includes('AWAITING PICKUP')) return 'AWAITING PICKUP';
@@ -42,29 +49,83 @@ const getBannerMessage = (status: string) => {
   }
 };
 
+const getStageFromParam = (stage?: string | string[]): TripStageKey | null => {
+  const normalizedStage = Array.isArray(stage) ? stage[0] : stage;
+
+  switch (normalizedStage) {
+    case 'not-started':
+      return 'notStarted';
+    case 'checked-in':
+      return 'checkedIn';
+    case 'awaiting-pickup':
+      return 'awaitingPickup';
+    case 'running-late':
+      return 'runningLate';
+    default:
+      return null;
+  }
+};
+
+const getStageFromStatus = (status: string): TripStageKey | null => {
+  switch (status) {
+    case 'NOT STARTED':
+      return 'notStarted';
+    case 'CHECKED IN':
+      return 'checkedIn';
+    case 'AWAITING PICKUP':
+      return 'awaitingPickup';
+    case 'RUNNING LATE':
+      return 'runningLate';
+    default:
+      return null;
+  }
+};
+
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'CHECKED IN':
+      return { banner: 'bg-[#0A8F2A]', badge: 'bg-[#12B76A]' };
+    case 'AWAITING PICKUP':
+      return { banner: 'bg-[#F97316]', badge: 'bg-[#F97316]' };
+    case 'RUNNING LATE':
+      return { banner: 'bg-[#DC2626]', badge: 'bg-[#D92D20]' };
+    case 'ONGOING':
+      return { banner: 'bg-[#0A8F2A]', badge: 'bg-[#12B76A]' };
+    case 'COMPLETE':
+      return { banner: 'bg-[#667185]', badge: 'bg-[#667185]' };
+    case 'CANCELLED':
+      return { banner: 'bg-[#DC2626]', badge: 'bg-[#D92D20]' };
+    default:
+      return { banner: 'bg-[#DC2626]', badge: 'bg-[#EAB308]' };
+  }
+};
+
 export default function TripDetailScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, stage } = useLocalSearchParams<{ id?: string; stage?: string }>();
   const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === id);
   const selectedStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
+  const selectedStage = getStageFromParam(stage) ?? getStageFromStatus(selectedStatus);
+  const stagedTripDetails = selectedStage ? MOCK_TRIP_DETAILS_BY_STAGE[selectedStage] : MOCK_TRIP_DETAILS;
   const trip = {
-    ...MOCK_TRIP_DETAILS,
-    id: selectedTrip?.tripId ?? MOCK_TRIP_DETAILS.id,
-    status: selectedStatus,
-    bannerMessage: getBannerMessage(selectedStatus),
+    ...stagedTripDetails,
+    id: selectedTrip?.tripId ?? stagedTripDetails.id,
+    status: selectedStage ? stagedTripDetails.status : selectedStatus,
+    bannerMessage: selectedStage ? stagedTripDetails.bannerMessage : getBannerMessage(selectedStatus),
     client: {
-      ...MOCK_TRIP_DETAILS.client,
-      name: selectedTrip?.clientName ?? MOCK_TRIP_DETAILS.client.name,
+      ...stagedTripDetails.client,
+      name: selectedTrip?.clientName ?? stagedTripDetails.client.name,
     },
     locations: {
-      ...MOCK_TRIP_DETAILS.locations,
-      pickup: selectedTrip?.location ?? MOCK_TRIP_DETAILS.locations.pickup,
+      ...stagedTripDetails.locations,
+      pickup: selectedTrip?.location ?? stagedTripDetails.locations.pickup,
     },
     vehicle: {
-      ...MOCK_TRIP_DETAILS.vehicle,
-      model: selectedTrip?.vehicle.split('•')[0]?.trim() ?? MOCK_TRIP_DETAILS.vehicle.model,
-      plate: selectedTrip?.vehicle.split('•')[1]?.trim() ?? MOCK_TRIP_DETAILS.vehicle.plate,
+      ...stagedTripDetails.vehicle,
+      model: selectedTrip?.vehicle.split('•')[0]?.trim() ?? stagedTripDetails.vehicle.model,
+      plate: selectedTrip?.vehicle.split('•')[1]?.trim() ?? stagedTripDetails.vehicle.plate,
     },
   };
+  const statusStyle = getStatusStyle(trip.status);
 
   const [isCallModalVisible, setIsCallModalVisible] = useState(false);
 
@@ -93,8 +154,7 @@ export default function TripDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Red Status Banner */}
-      <View className="bg-[#DC2626] px-4 py-3 w-full">
+      <View className={`${statusStyle.banner} px-4 py-3 w-full`}>
         <Text className="text-white font-inter font-medium text-center text-[14px]">
           {trip.bannerMessage}
         </Text>
@@ -104,7 +164,7 @@ export default function TripDetailScreen() {
         
         {/* --- TRIP STATUS --- */}
         <SectionHeader title="Trip Status" />
-        <View className="bg-[#EAB308] self-start px-4 py-2 rounded-full mb-2">
+        <View className={`${statusStyle.badge} self-start px-4 py-2 rounded-full mb-2`}>
           <Text className="text-white font-inter font-semibold text-[11px] uppercase tracking-wide">
             {trip.status}
           </Text>

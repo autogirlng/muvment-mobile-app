@@ -1,5 +1,24 @@
 // src/data/mockData.ts
 
+export type TripLifecycleStatus =
+  | 'NOT STARTED'
+  | 'CHECKED IN'
+  | 'AWAITING PICKUP'
+  | 'RUNNING LATE'
+  | 'ONGOING'
+  | 'COMPLETE'
+  | 'CANCELLED';
+
+export type TripStageKey = 'notStarted' | 'checkedIn' | 'awaitingPickup' | 'runningLate';
+
+type TimelineState = 'completed' | 'current' | 'upcoming';
+
+export type MockTimelineStep = {
+  id: string;
+  title: string;
+  state: TimelineState;
+};
+
 // --- TRIPS DATA ---
 export const GROUPED_TRIPS_DATA = [
   {
@@ -21,7 +40,25 @@ export const GROUPED_TRIPS_DATA = [
         location: 'Autogirl Service Center, Lekki',
         vehicle: 'Honda Accord • LAG-567-ABJ',
         timeRange: '3:00 PM - 3:00 AM (24 hrs)',
-        tripId: 'TRP-2026-102846'
+        tripId: 'TRP-2026-102847'
+      },
+      {
+        id: '8',
+        badges: [{ label: 'CHECKED IN' }, { label: 'FULL DAY RENTAL' }, { label: 'CUSTOMER' }],
+        clientName: 'Dr. Amina Bello',
+        location: 'GTBank Headquarters, Victoria Island',
+        vehicle: 'Honda Accord • LAG-567-ABJ',
+        timeRange: '2:00 PM - 2:00 AM (24 hrs)',
+        tripId: 'TRP-2026-102848'
+      },
+      {
+        id: '9',
+        badges: [{ label: 'RUNNING LATE' }, { label: 'FULL DAY RENTAL' }, { label: 'CUSTOMER' }],
+        clientName: 'Dr. Amina Bello',
+        location: 'GTBank Headquarters, Victoria Island',
+        vehicle: 'Honda Accord • LAG-567-ABJ',
+        timeRange: '2:00 PM - 2:00 AM (24 hrs)',
+        tripId: 'TRP-2026-102849'
       }
     ]
   },
@@ -270,17 +307,24 @@ export const MOCK_REQUEST_DETAILS = {
 
 // TRIP DETAILS
 
-export const MOCK_TRIP_DETAILS = {
+export const PRE_CHECKLIST_TIMELINE: MockTimelineStep[] = [
+  { id: '1', title: 'Trip Assigned', state: 'completed' },
+  { id: '2', title: 'Pre-Ride Checklist', state: 'current' },
+  { id: '3', title: 'Client Pickup', state: 'upcoming' },
+  { id: '4', title: 'Ongoing Ride', state: 'upcoming' },
+  { id: '5', title: 'Trip Complete', state: 'upcoming' },
+];
+
+export const PICKUP_STAGE_TIMELINE: MockTimelineStep[] = [
+  { id: '1', title: 'Trip Assigned', state: 'completed' },
+  { id: '2', title: 'Pre-Ride Checklist', state: 'completed' },
+  { id: '3', title: 'Client Pickup', state: 'current' },
+  { id: '4', title: 'Ongoing Ride', state: 'upcoming' },
+  { id: '5', title: 'Trip Complete', state: 'upcoming' },
+];
+
+const MOCK_TRIP_BASE_DETAILS = {
   id: 'TRP-2026-102846',
-  status: 'NOT STARTED',
-  bannerMessage: 'Trip Not Started - Complete Pre-Ride Checklist',
-  timeline: [
-    { id: '1', title: 'Trip Assigned', state: 'completed' },
-    { id: '2', title: 'Pre-Ride Checklist', state: 'current' },
-    { id: '3', title: 'Client Pickup', state: 'upcoming' },
-    { id: '4', title: 'Ongoing Ride', state: 'upcoming' },
-    { id: '5', title: 'Trip Complete', state: 'upcoming' },
-  ],
   client: {
     name: 'Dr. Amina Bello',
     phone: '+234 803 456 7890',
@@ -305,5 +349,40 @@ export const MOCK_TRIP_DETAILS = {
     'Drop at 65b Opebi Salvation, wema Bank, Ikeja',
     'Wait for meeting (2 hours)',
     'Return to GTBank Headquarters, Victoria Island',
-  ]
+  ],
 };
+
+export type MockTripDetails = typeof MOCK_TRIP_BASE_DETAILS & {
+  status: TripLifecycleStatus;
+  bannerMessage: string;
+  timeline: MockTimelineStep[];
+};
+
+export const MOCK_TRIP_DETAILS: MockTripDetails = {
+  ...MOCK_TRIP_BASE_DETAILS,
+  status: 'NOT STARTED',
+  bannerMessage: 'Trip Not Started - Complete Pre-Ride Checklist',
+  timeline: PRE_CHECKLIST_TIMELINE,
+};
+
+export const MOCK_TRIP_DETAILS_BY_STAGE = {
+  notStarted: MOCK_TRIP_DETAILS,
+  checkedIn: {
+    ...MOCK_TRIP_BASE_DETAILS,
+    status: 'CHECKED IN',
+    bannerMessage: 'Checklist complete. Proceed to pickup location.',
+    timeline: PICKUP_STAGE_TIMELINE,
+  },
+  awaitingPickup: {
+    ...MOCK_TRIP_BASE_DETAILS,
+    status: 'AWAITING PICKUP',
+    bannerMessage: "Waiting for client. Tap 'Start Ride' when ready.",
+    timeline: PICKUP_STAGE_TIMELINE,
+  },
+  runningLate: {
+    ...MOCK_TRIP_BASE_DETAILS,
+    status: 'RUNNING LATE',
+    bannerMessage: 'Pickup overdue. Contact operations.',
+    timeline: PICKUP_STAGE_TIMELINE,
+  },
+} satisfies Record<TripStageKey, MockTripDetails>;
