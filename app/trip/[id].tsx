@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 
 import { TimelineTracker } from '../../src/components/common/TimelineTracker';
 import { LocationItem } from '../../src/components/common/LocationItem';
@@ -61,6 +62,8 @@ const getStageFromParam = (stage?: string | string[]): TripStageKey | null => {
       return 'awaitingPickup';
     case 'running-late':
       return 'runningLate';
+    case 'ongoing':
+      return 'ongoing';
     default:
       return null;
   }
@@ -76,9 +79,113 @@ const getStageFromStatus = (status: string): TripStageKey | null => {
       return 'awaitingPickup';
     case 'RUNNING LATE':
       return 'runningLate';
+    case 'ONGOING':
+      return 'ongoing';
     default:
       return null;
   }
+};
+
+type RideTimerType = 'airport' | 'standard' | 'full-day';
+
+const getStringParam = (value?: string | string[]) => (
+  Array.isArray(value) ? value[0] : value
+);
+
+const getRideTimerType = (rideType?: string | string[], rentalType?: string): RideTimerType => {
+  const normalizedRideType = getStringParam(rideType);
+
+  if (normalizedRideType === 'airport') return 'airport';
+  if (normalizedRideType === 'standard') return 'standard';
+  if (normalizedRideType === 'full-day') return 'full-day';
+
+  const normalizedRentalType = rentalType?.toLowerCase() ?? '';
+
+  if (normalizedRentalType.includes('airport')) return 'airport';
+  if (normalizedRentalType.includes('standard')) return 'standard';
+
+  return 'full-day';
+};
+
+const getRideTimerConfig = (rideType: RideTimerType) => {
+  switch (rideType) {
+    case 'airport':
+      return {
+        label: 'Airport Transfer – 4 Hours',
+        totalSeconds: 4 * 60 * 60,
+        defaultRemainingSeconds: (3 * 60 * 60) + (59 * 60) + 45,
+      };
+    case 'standard':
+      return {
+        label: 'Standard – 12 Hours',
+        totalSeconds: 12 * 60 * 60,
+        defaultRemainingSeconds: (11 * 60 * 60) + (59 * 60) + 45,
+      };
+    case 'full-day':
+      return {
+        label: 'Full Day Rental – 24 Hours',
+        totalSeconds: 24 * 60 * 60,
+        defaultRemainingSeconds: (23 * 60 * 60) + (59 * 60) + 45,
+      };
+  }
+};
+
+const formatTime = (totalSeconds: number) => {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+};
+
+const TimerRing = ({
+  remainingSeconds,
+  totalSeconds,
+}: {
+  remainingSeconds: number;
+  totalSeconds: number;
+}) => {
+  const size = 120;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = totalSeconds > 0 ? remainingSeconds / totalSeconds : 0;
+  const strokeDashoffset = circumference * (1 - Math.max(0, Math.min(progress, 1)));
+
+  return (
+    <View className="items-center justify-center">
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#D9D9D9"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#1D8BFF"
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90"
+          originX={size / 2}
+          originY={size / 2}
+        />
+      </Svg>
+      <Text className="absolute font-inter font-bold text-[#1D2739] text-[18px]">
+        {formatTime(remainingSeconds)}
+      </Text>
+    </View>
+  );
 };
 
 const getStatusStyle = (status: string) => {
@@ -101,10 +208,12 @@ const getStatusStyle = (status: string) => {
 };
 
 export default function TripDetailScreen() {
-  const { id, stage, pickupReady } = useLocalSearchParams<{
+  const { id, stage, pickupReady, rideType, remainingSeconds } = useLocalSearchParams<{
     id?: string;
     stage?: string;
     pickupReady?: string;
+    rideType?: string;
+    remainingSeconds?: string;
   }>();
   const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === id);
   const selectedStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
@@ -132,8 +241,15 @@ export default function TripDetailScreen() {
   const statusStyle = getStatusStyle(trip.status);
   const routeTripId = id ?? selectedTrip?.id ?? '1';
   const isPickupTimeReached = pickupReady === 'true' || trip.status === 'RUNNING LATE';
+  const timerType = getRideTimerType(rideType, trip.booking.rentalType);
+  const timerConfig = getRideTimerConfig(timerType);
+  const parsedRemainingSeconds = Number(getStringParam(remainingSeconds));
+  const timerRemainingSeconds = Number.isFinite(parsedRemainingSeconds)
+    ? parsedRemainingSeconds
+    : timerConfig.defaultRemainingSeconds;
 
   const [isCallModalVisible, setIsCallModalVisible] = useState(false);
+  const [isPickupTooltipVisible, setIsPickupTooltipVisible] = useState(false);
 
   const SectionDivider = () => <View className="h-[1px] bg-[#E4E7EC] w-full my-3" />;
 
@@ -150,6 +266,7 @@ export default function TripDetailScreen() {
           title: 'Proceed to Pickup',
           disabled: false,
           showPickupTooltip: false,
+          destructive: false,
           onPress: () => router.push(`/trip/${encodeURIComponent(routeTripId)}?stage=awaiting-pickup`),
         };
       case 'AWAITING PICKUP':
@@ -157,6 +274,7 @@ export default function TripDetailScreen() {
           title: 'Start Ride',
           disabled: !isPickupTimeReached,
           showPickupTooltip: !isPickupTimeReached,
+          destructive: false,
           onPress: () => console.log('Start ride'),
         };
       case 'RUNNING LATE':
@@ -164,13 +282,23 @@ export default function TripDetailScreen() {
           title: 'Start Ride',
           disabled: false,
           showPickupTooltip: false,
+          destructive: false,
           onPress: () => console.log('Start ride'),
+        };
+      case 'ONGOING':
+        return {
+          title: 'End Ride',
+          disabled: false,
+          showPickupTooltip: false,
+          destructive: true,
+          onPress: () => console.log('End ride'),
         };
       default:
         return {
           title: 'Start Pre-Ride Checklist',
           disabled: false,
           showPickupTooltip: false,
+          destructive: false,
           onPress: () => router.push(`/checklist/step1?tripId=${encodeURIComponent(routeTripId)}`),
         };
     }
@@ -202,7 +330,21 @@ export default function TripDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} bounces={true}>
-        
+        {trip.status === 'ONGOING' && (
+          <View className="items-center mb-6">
+            <TimerRing
+              remainingSeconds={timerRemainingSeconds}
+              totalSeconds={timerConfig.totalSeconds}
+            />
+            <Text className="font-inter text-[#667185] text-[13px] mt-4 mb-1">
+              Time remaining
+            </Text>
+            <Text className="font-inter font-bold text-[#1D2739] text-[17px]">
+              {timerConfig.label}
+            </Text>
+          </View>
+        )}
+
         {/* --- TRIP STATUS --- */}
         <SectionHeader title="Trip Status" />
         <View className={`${statusStyle.badge} self-start px-4 py-2 rounded-full mb-2`}>
@@ -330,7 +472,7 @@ export default function TripDetailScreen() {
           ))}
         </View>
 
-        {actionConfig.showPickupTooltip && (
+        {actionConfig.showPickupTooltip && isPickupTooltipVisible && (
           <View className="bg-[#F2F4F7] border border-[#E4E7EC] rounded-xl px-4 py-3 mt-8 mb-3 flex-row items-center">
             <Ionicons name="information-circle-outline" size={18} color="#667185" />
             <Text className="font-inter text-[#667185] text-[13px] ml-2 flex-1">
@@ -341,17 +483,23 @@ export default function TripDetailScreen() {
 
         <TouchableOpacity
           activeOpacity={0.8}
-          disabled={actionConfig.disabled}
+          disabled={actionConfig.disabled && !actionConfig.showPickupTooltip}
           className={`w-full h-[52px] rounded-xl flex-row items-center justify-center shadow-sm mb-6 ${
-            actionConfig.disabled ? 'bg-[#D0D5DD]' : 'bg-[#0673FF]'
-          } ${actionConfig.showPickupTooltip ? '' : 'mt-8'}`}
-          onPress={actionConfig.onPress}
+            actionConfig.disabled ? 'bg-[#D0D5DD]' : actionConfig.destructive ? 'bg-[#E32636]' : 'bg-[#0673FF]'
+          } ${actionConfig.showPickupTooltip && isPickupTooltipVisible ? '' : 'mt-8'}`}
+          onPress={actionConfig.disabled ? undefined : actionConfig.onPress}
         >
           <Text className="text-white font-inter font-medium text-base">
             {actionConfig.title}
           </Text>
           {actionConfig.showPickupTooltip && (
-            <Ionicons name="information-circle-outline" size={18} color="#667185" className="ml-2" />
+            <TouchableOpacity
+              className="ml-2"
+              onPress={() => setIsPickupTooltipVisible((isVisible) => !isVisible)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="information-circle-outline" size={18} color="#667185" />
+            </TouchableOpacity>
           )}
         </TouchableOpacity>
 
