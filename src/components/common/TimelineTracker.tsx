@@ -32,7 +32,7 @@ export const TimelineTracker: React.FC<TimelineTrackerProps> = ({ steps }) => {
                 <Ionicons name="checkmark-circle-outline" size={18} color="#12B76A" />
               )}
               {step.state === 'current' && (
-                <View className="w-4 h-4 rounded-full border-2 border-[#475367] ml-[1px]" />
+                <View className="w-4 h-4 rounded-full border-2 border-[#667185] ml-[1px]" />
               )}
               {step.state === 'upcoming' && (
                 <View className="w-4 h-4 rounded-full border border-[#D0D5DD] ml-[1px]" />

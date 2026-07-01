@@ -1,0 +1,33 @@
+// src/components/common/EmptyState.tsx
+import React from 'react';
+import { View, Text, Image, ImageSourcePropType } from 'react-native';
+
+interface EmptyStateProps {
+  title: string;
+  description: string;
+  // Make the image prop optional using "?"
+  image?: ImageSourcePropType; 
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({ 
+  title, 
+  description, 
+  // Set the default fallback right here in the props
+  image = require('../../../assets/brand/empty.png') 
+}) => {
+  return (
+    <View className="flex-1 items-center justify-center px-8 mt-16">
+      <Image 
+        source={image} // Now it dynamically uses whatever was passed, or the default
+        className="w-48 h-48 mb-6"
+        resizeMode="contain"
+      />
+      <Text className="text-2xl font-inter font-medium text-[#475367] mb-3 text-center">
+        {title}
+      </Text>
+      <Text className="text-[#98A2B3] font-inter text-center leading-6">
+        {description}
+      </Text>
+    </View>
+  );
+};
