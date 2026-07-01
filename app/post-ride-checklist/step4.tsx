@@ -7,9 +7,9 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { CustomBack } from '../../src/components/common/CustomBack';
-import { CustomButton } from '../../src/components/common/CustomButton';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { SummaryCard } from '../../src/components/common/SummaryCard';
@@ -31,7 +31,7 @@ export default function PostRideChecklistStep4Screen() {
         <CustomBack color="#101928" />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} bounces={true}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }} bounces={true}>
         <View className="px-5">
           <StepIndicator currentStep={4} totalSteps={4} />
 
@@ -77,13 +77,11 @@ export default function PostRideChecklistStep4Screen() {
         </View>
       </ScrollView>
 
-      <View className="px-5 pb-8 pt-4 bg-[#F8FAFC]">
-        <CustomButton
-          title="Submit Checklist"
-          activeOpacity={0.8}
-          onPress={() => setIsConfirmVisible(true)}
-        />
-      </View>
+      <ChecklistFooter
+        title="Submit Checklist"
+        activeOpacity={0.8}
+        onPress={() => setIsConfirmVisible(true)}
+      />
 
       <ConfirmationModal
         visible={isConfirmVisible}

@@ -13,6 +13,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { TimelineTracker } from '../../src/components/common/TimelineTracker';
 import { LocationItem } from '../../src/components/common/LocationItem';
 import { CallModal } from '../../src/components/common/CallModal';
+import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import {
   FLAT_TRIPS_DATA,
   MOCK_TRIP_DETAILS,
@@ -64,6 +65,8 @@ const getStageFromParam = (stage?: string | string[]): TripStageKey | null => {
       return 'runningLate';
     case 'ongoing':
       return 'ongoing';
+    case 'complete':
+      return 'complete';
     default:
       return null;
   }
@@ -81,6 +84,8 @@ const getStageFromStatus = (status: string): TripStageKey | null => {
       return 'runningLate';
     case 'ONGOING':
       return 'ongoing';
+    case 'COMPLETE':
+      return 'complete';
     default:
       return null;
   }
@@ -250,6 +255,7 @@ export default function TripDetailScreen() {
 
   const [isCallModalVisible, setIsCallModalVisible] = useState(false);
   const [isPickupTooltipVisible, setIsPickupTooltipVisible] = useState(false);
+  const [isEndRideConfirmVisible, setIsEndRideConfirmVisible] = useState(false);
 
   const SectionDivider = () => <View className="h-[1px] bg-[#E4E7EC] w-full my-3" />;
 
@@ -291,8 +297,10 @@ export default function TripDetailScreen() {
           disabled: false,
           showPickupTooltip: false,
           destructive: true,
-          onPress: () => router.push(`/post-ride-checklist/step1?tripId=${encodeURIComponent(routeTripId)}`),
+          onPress: () => setIsEndRideConfirmVisible(true),
         };
+      case 'COMPLETE':
+        return null;
       default:
         return {
           title: 'Start Pre-Ride Checklist',
@@ -472,7 +480,7 @@ export default function TripDetailScreen() {
           ))}
         </View>
 
-        {actionConfig.showPickupTooltip && isPickupTooltipVisible && (
+        {actionConfig?.showPickupTooltip && isPickupTooltipVisible && (
           <View className="bg-[#F2F4F7] border border-[#E4E7EC] rounded-xl px-4 py-3 mt-8 mb-3 flex-row items-center">
             <Ionicons name="information-circle-outline" size={18} color="#667185" />
             <Text className="font-inter text-[#667185] text-[13px] ml-2 flex-1">
@@ -481,27 +489,29 @@ export default function TripDetailScreen() {
           </View>
         )}
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          disabled={actionConfig.disabled && !actionConfig.showPickupTooltip}
-          className={`w-full h-[52px] rounded-xl flex-row items-center justify-center shadow-sm mb-6 ${
-            actionConfig.disabled ? 'bg-[#D0D5DD]' : actionConfig.destructive ? 'bg-[#E32636]' : 'bg-[#0673FF]'
-          } ${actionConfig.showPickupTooltip && isPickupTooltipVisible ? '' : 'mt-8'}`}
-          onPress={actionConfig.disabled ? undefined : actionConfig.onPress}
-        >
-          <Text className="text-white font-inter font-medium text-base">
-            {actionConfig.title}
-          </Text>
-          {actionConfig.showPickupTooltip && (
-            <TouchableOpacity
-              className="ml-2"
-              onPress={() => setIsPickupTooltipVisible((isVisible) => !isVisible)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Ionicons name="information-circle-outline" size={18} color="#667185" />
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
+        {actionConfig && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            disabled={actionConfig.disabled && !actionConfig.showPickupTooltip}
+            className={`w-full h-[52px] rounded-xl flex-row items-center justify-center shadow-sm mb-6 ${
+              actionConfig.disabled ? 'bg-[#D0D5DD]' : actionConfig.destructive ? 'bg-[#E32636]' : 'bg-[#0673FF]'
+            } ${actionConfig.showPickupTooltip && isPickupTooltipVisible ? '' : 'mt-8'}`}
+            onPress={actionConfig.disabled ? undefined : actionConfig.onPress}
+          >
+            <Text className="text-white font-inter font-medium text-base">
+              {actionConfig.title}
+            </Text>
+            {actionConfig.showPickupTooltip && (
+              <TouchableOpacity
+                className="ml-2"
+                onPress={() => setIsPickupTooltipVisible((isVisible) => !isVisible)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="information-circle-outline" size={18} color="#667185" />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        )}
 
       </ScrollView>
 
@@ -509,6 +519,19 @@ export default function TripDetailScreen() {
         visible={isCallModalVisible}
         onClose={() => setIsCallModalVisible(false)}
         phoneNumber={trip.client.phone}
+      />
+
+      <ConfirmationModal
+        visible={isEndRideConfirmVisible}
+        onClose={() => setIsEndRideConfirmVisible(false)}
+        onConfirm={() => {
+          setIsEndRideConfirmVisible(false);
+          router.push(`/post-ride-checklist/step1?tripId=${encodeURIComponent(routeTripId)}`);
+        }}
+        title="End this ride?"
+        message="Are you sure you want to end this ride? This action cannot be undone."
+        confirmText="End Ride"
+        confirmVariant="danger"
       />
 
     </SafeAreaView>

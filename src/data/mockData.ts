@@ -9,7 +9,7 @@ export type TripLifecycleStatus =
   | 'COMPLETE'
   | 'CANCELLED';
 
-export type TripStageKey = 'notStarted' | 'checkedIn' | 'awaitingPickup' | 'runningLate' | 'ongoing';
+export type TripStageKey = 'notStarted' | 'checkedIn' | 'awaitingPickup' | 'runningLate' | 'ongoing' | 'complete';
 
 type TimelineState = 'completed' | 'current' | 'upcoming';
 
@@ -331,6 +331,14 @@ export const ONGOING_RIDE_TIMELINE: MockTimelineStep[] = [
   { id: '5', title: 'Trip Complete', state: 'upcoming' },
 ];
 
+export const COMPLETE_TIMELINE: MockTimelineStep[] = [
+  { id: '1', title: 'Trip Assigned', state: 'completed' },
+  { id: '2', title: 'Pre-Ride Checklist', state: 'completed' },
+  { id: '3', title: 'Client Pickup', state: 'completed' },
+  { id: '4', title: 'Ongoing Ride', state: 'completed' },
+  { id: '5', title: 'Trip Complete', state: 'completed' },
+];
+
 const MOCK_TRIP_BASE_DETAILS = {
   id: 'TRP-2026-102846',
   client: {
@@ -398,6 +406,12 @@ export const MOCK_TRIP_DETAILS_BY_STAGE = {
     status: 'ONGOING',
     bannerMessage: 'Ride in progress',
     timeline: ONGOING_RIDE_TIMELINE,
+  },
+  complete: {
+    ...MOCK_TRIP_BASE_DETAILS,
+    status: 'COMPLETE',
+    bannerMessage: 'Trip Complete',
+    timeline: COMPLETE_TIMELINE,
   },
 } satisfies Record<TripStageKey, MockTripDetails>;
 

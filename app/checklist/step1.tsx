@@ -7,8 +7,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
-import { CustomButton } from '../../src/components/common/CustomButton';
 import { LocationItem } from '../../src/components/common/LocationItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { VehicleCard } from '../../src/components/common/VehicleCard';
@@ -34,7 +34,7 @@ export default function ChecklistStep1Screen() {
         <CustomBack color="#101928" />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }} bounces={true}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }} bounces={true}>
         
         {/* Dynamic Step Tracker */}
         <StepIndicator currentStep={1} totalSteps={6} />
@@ -81,14 +81,11 @@ export default function ChecklistStep1Screen() {
 
       </ScrollView>
 
-      {/* Bottom Sticky Action Button */}
-      <View className="px-5 pb-8 pt-4 bg-[#F8FAFC] mb-6">
-        <CustomButton
-          title="Next"
-          activeOpacity={0.8}
-          onPress={() => router.push(`/checklist/step2?tripId=${encodeURIComponent(activeTripId)}`)}
-        />
-      </View>
+      <ChecklistFooter
+        title="Next"
+        activeOpacity={0.8}
+        onPress={() => router.push(`/checklist/step2?tripId=${encodeURIComponent(activeTripId)}`)}
+      />
 
     </SafeAreaView>
   );

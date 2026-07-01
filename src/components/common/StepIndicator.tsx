@@ -16,17 +16,17 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
   return (
     <View className="flex-row items-center justify-between px-2 mb-6 mt-4">
       {steps.map((step) => {
-        const isActive = step === currentStep;
+        const isCompleteOrActive = step <= currentStep;
         return (
           <View
             key={step}
             className={`w-10 h-10 rounded-full items-center justify-center ${
-              isActive ? 'bg-[#0673FF]' : 'bg-[#E4E7EC]'
+              isCompleteOrActive ? 'bg-[#0673FF]' : 'bg-[#E4E7EC]'
             }`}
           >
             <Text
               className={`font-inter font-medium text-[15px] ${
-                isActive ? 'text-white' : 'text-[#98A2B3]'
+                isCompleteOrActive ? 'text-white' : 'text-[#98A2B3]'
               }`}
             >
               {step}

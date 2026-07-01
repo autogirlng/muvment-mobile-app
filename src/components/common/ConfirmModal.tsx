@@ -8,6 +8,7 @@ interface ConfirmationModalProps {
   title: string;
   message: string;
   confirmText?: string;
+  confirmVariant?: 'primary' | 'danger';
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -16,8 +17,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmText = 'Submit'
+  confirmText = 'Submit',
+  confirmVariant = 'primary'
 }) => {
+  const confirmButtonClassName = confirmVariant === 'danger' ? 'bg-[#E32636]' : 'bg-[#0673FF]';
+
   return (
     <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-center items-center px-6">
@@ -41,7 +45,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             
             <TouchableOpacity 
               onPress={onConfirm}
-              className="flex-1 h-12 rounded-xl bg-[#0673FF] items-center justify-center"
+              className={`flex-1 h-12 rounded-xl ${confirmButtonClassName} items-center justify-center`}
             >
               <Text className="font-inter font-medium text-white">{confirmText}</Text>
             </TouchableOpacity>

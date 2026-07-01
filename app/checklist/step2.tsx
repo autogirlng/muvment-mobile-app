@@ -7,8 +7,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
-import { CustomButton } from '../../src/components/common/CustomButton';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 
@@ -60,7 +60,7 @@ export default function ChecklistStep2Screen() {
         <CustomBack color="#101928" />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} bounces={true}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }} bounces={true}>
         
         <View className="px-5">
           <StepIndicator currentStep={2} totalSteps={6} />
@@ -139,15 +139,12 @@ export default function ChecklistStep2Screen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Button */}
-      <View className="px-5 pb-8 pt-4 bg-[#F8FAFC]">
-        <CustomButton
-          title="Next"
-          activeOpacity={0.8}
-          disabled={!isNextEnabled}
-          onPress={() => router.push(`/checklist/step3?tripId=${encodeURIComponent(activeTripId)}`)}
-        />
-      </View>
+      <ChecklistFooter
+        title="Next"
+        activeOpacity={0.8}
+        disabled={!isNextEnabled}
+        onPress={() => router.push(`/checklist/step3?tripId=${encodeURIComponent(activeTripId)}`)}
+      />
 
     </SafeAreaView>
   );

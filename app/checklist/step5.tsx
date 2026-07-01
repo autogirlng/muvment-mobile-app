@@ -10,8 +10,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
+import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
-import { CustomButton } from '../../src/components/common/CustomButton';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 
@@ -43,7 +43,7 @@ export default function ChecklistStep5Screen() {
         <CustomBack color="#101928" />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} bounces={true}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }} bounces={true}>
         
         <View className="px-5">
           <StepIndicator currentStep={5} totalSteps={6} />
@@ -123,15 +123,12 @@ export default function ChecklistStep5Screen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Button */}
-      <View className="px-5 pb-8 pt-4 bg-[#F8FAFC]">
-        <CustomButton
-          title="Next"
-          activeOpacity={0.8}
-          disabled={!selfieUri}
-          onPress={() => router.push(`/checklist/step6?tripId=${encodeURIComponent(activeTripId)}`)}
-        />
-      </View>
+      <ChecklistFooter
+        title="Next"
+        activeOpacity={0.8}
+        disabled={!selfieUri}
+        onPress={() => router.push(`/checklist/step6?tripId=${encodeURIComponent(activeTripId)}`)}
+      />
 
     </SafeAreaView>
   );

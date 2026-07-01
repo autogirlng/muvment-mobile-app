@@ -9,9 +9,9 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
+import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { CustomBack } from '../../src/components/common/CustomBack';
-import { CustomButton } from '../../src/components/common/CustomButton';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { SummaryCard } from '../../src/components/common/SummaryCard';
@@ -47,7 +47,7 @@ export default function ChecklistStep6Screen() {
         <CustomBack color="#101928" />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} bounces={true}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }} bounces={true}>
         
         <View className="px-5">
           <StepIndicator currentStep={6} totalSteps={6} />
@@ -87,13 +87,10 @@ export default function ChecklistStep6Screen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Button */}
-      <View className="px-5 pb-8 pt-4 bg-[#F8FAFC]">
-        <CustomButton
-          title="Submit Checklist"
-          onPress={() => setIsConfirmVisible(true)}
-        />
-      </View>
+      <ChecklistFooter
+        title="Submit Checklist"
+        onPress={() => setIsConfirmVisible(true)}
+      />
 
       {/* Confirmation Modal */}
       <ConfirmationModal 
