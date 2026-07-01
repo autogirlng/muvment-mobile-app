@@ -66,7 +66,11 @@ export default function PostRideChecklistStep2Screen() {
         <CustomBack color="#101928" />
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }} bounces={true}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
+        bounces={true}
+      >
         <View className="px-5">
           <StepIndicator currentStep={2} totalSteps={4} />
 

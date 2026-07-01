@@ -12,7 +12,7 @@ export const ChecklistFooter: React.FC<ChecklistFooterProps> = (props) => {
   return (
     <View
       className="px-5 pt-4 bg-[#F8FAFC]"
-      style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+      style={{ flexShrink: 0, paddingBottom: Math.max(insets.bottom, 24) }}
     >
       <CustomButton {...props} />
     </View>
