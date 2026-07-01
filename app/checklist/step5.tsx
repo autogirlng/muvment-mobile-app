@@ -15,9 +15,7 @@ import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
-
-// Dummy selfie image to simulate a captured photo
-const DUMMY_SELFIE_IMG = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400';
+import { capturePhoto } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep5Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
@@ -31,9 +29,12 @@ export default function ChecklistStep5Screen() {
     "Good lighting on your face"
   ];
 
-  const handleOpenCamera = () => {
-    // In a real app, this would trigger the device's camera module (e.g., expo-camera or expo-image-picker)
-    setSelfieUri(DUMMY_SELFIE_IMG);
+  const handleOpenCamera = async () => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setSelfieUri(photoUri);
+    }
   };
 
   return (

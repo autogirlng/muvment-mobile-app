@@ -13,8 +13,7 @@ import { CustomBack } from '../../src/components/common/CustomBack';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { MOCK_POST_RIDE_CHECKLIST } from '../../src/data/mockData';
-
-const DUMMY_EXTERIOR_IMG = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800';
+import { capturePhoto } from '../../src/utils/deviceActions';
 
 type RequiredExteriorPhotoId = 'rightSide' | 'leftSide' | 'front' | 'back';
 
@@ -33,11 +32,15 @@ export default function PostRideChecklistStep2Screen() {
   const photoRequirements = MOCK_POST_RIDE_CHECKLIST.exteriorPhotos.required;
   const damageConfig = MOCK_POST_RIDE_CHECKLIST.exteriorPhotos.optionalDamage;
 
-  const handleImagePick = (field: RequiredExteriorPhotoId) => {
-    setRequiredPhotos((currentPhotos) => ({
-      ...currentPhotos,
-      [field]: DUMMY_EXTERIOR_IMG,
-    }));
+  const handleImagePick = async (field: RequiredExteriorPhotoId) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setRequiredPhotos((currentPhotos) => ({
+        ...currentPhotos,
+        [field]: photoUri,
+      }));
+    }
   };
 
   const handleRemoveRequired = (field: RequiredExteriorPhotoId) => {
@@ -47,9 +50,23 @@ export default function PostRideChecklistStep2Screen() {
     }));
   };
 
-  const handleAddDamagePhoto = () => {
+  const handleAddDamagePhoto = async () => {
     if (damagePhotos.length < damageConfig.maxPhotos) {
-      setDamagePhotos((currentPhotos) => [...currentPhotos, DUMMY_EXTERIOR_IMG]);
+      const photoUri = await capturePhoto();
+
+      if (photoUri) {
+        setDamagePhotos((currentPhotos) => [...currentPhotos, photoUri]);
+      }
+    }
+  };
+
+  const handleRetakeDamagePhoto = async (indexToUpdate: number) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setDamagePhotos((currentPhotos) => (
+        currentPhotos.map((uri, index) => (index === indexToUpdate ? photoUri : uri))
+      ));
     }
   };
 
@@ -119,7 +136,7 @@ export default function PostRideChecklistStep2Screen() {
               title={damageConfig.title}
               subtitle={damageConfig.subtitle}
               imageUri={uri}
-              onPress={() => {}}
+              onPress={() => handleRetakeDamagePhoto(index)}
               onRemove={() => handleRemoveDamagePhoto(index)}
             />
           ))}

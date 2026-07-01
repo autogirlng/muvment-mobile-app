@@ -16,8 +16,7 @@ import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
-
-const DUMMY_INTERIOR_IMG = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800';
+import { capturePhoto } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep3Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
@@ -36,9 +35,12 @@ export default function ChecklistStep3Screen() {
   const [odometer, setOdometer] = useState('');
   const [fuelLevel, setFuelLevel] = useState('');
 
-  // Simulate picking the dashboard image and auto-extracting the data
-  const handleDashboardPick = () => {
-    setPhotos(prev => ({ ...prev, dashboard: DUMMY_INTERIOR_IMG }));
+  const handleDashboardPick = async () => {
+    const photoUri = await capturePhoto();
+
+    if (!photoUri) return;
+
+    setPhotos(prev => ({ ...prev, dashboard: photoUri }));
     
     // Simulate a brief API loading delay for the AI extraction
     setTimeout(() => {
@@ -53,8 +55,12 @@ export default function ChecklistStep3Screen() {
     }, 800);
   };
 
-  const handleImagePick = (field: keyof typeof photos) => {
-    setPhotos(prev => ({ ...prev, [field]: DUMMY_INTERIOR_IMG }));
+  const handleImagePick = async (field: keyof typeof photos) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setPhotos(prev => ({ ...prev, [field]: photoUri }));
+    }
   };
 
   const handleRemovePhoto = (field: keyof typeof photos) => {

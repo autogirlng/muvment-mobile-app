@@ -12,6 +12,7 @@ import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
+import { capturePhoto } from '../../src/utils/deviceActions';
 
 // Dummy car image to simulate a picked photo
 const DUMMY_CAR_IMG = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800';
@@ -31,18 +32,35 @@ export default function ChecklistStep2Screen() {
   // State for optional damage photos (Array up to 3)
   const [damagePhotos, setDamagePhotos] = useState<string[]>([DUMMY_CAR_IMG]);
 
-  // Mock function to simulate picking an image
-  const handleImagePick = (field: keyof typeof requiredPhotos) => {
-    setRequiredPhotos(prev => ({ ...prev, [field]: DUMMY_CAR_IMG }));
+  const handleImagePick = async (field: keyof typeof requiredPhotos) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setRequiredPhotos(prev => ({ ...prev, [field]: photoUri }));
+    }
   };
 
   const handleRemoveRequired = (field: keyof typeof requiredPhotos) => {
     setRequiredPhotos(prev => ({ ...prev, [field]: null }));
   };
 
-  const handleAddDamagePhoto = () => {
+  const handleAddDamagePhoto = async () => {
     if (damagePhotos.length < 3) {
-      setDamagePhotos(prev => [...prev, DUMMY_CAR_IMG]);
+      const photoUri = await capturePhoto();
+
+      if (photoUri) {
+        setDamagePhotos(prev => [...prev, photoUri]);
+      }
+    }
+  };
+
+  const handleRetakeDamagePhoto = async (indexToUpdate: number) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setDamagePhotos(prev => (
+        prev.map((uri, index) => (index === indexToUpdate ? photoUri : uri))
+      ));
     }
   };
 
@@ -131,7 +149,7 @@ export default function ChecklistStep2Screen() {
               title="Additional (Optional)"
               subtitle="Up to 3 damage close-ups"
               imageUri={uri}
-              onPress={() => {}} 
+              onPress={() => handleRetakeDamagePhoto(index)}
               onRemove={() => handleRemoveDamagePhoto(index)}
             />
           ))}

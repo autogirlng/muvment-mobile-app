@@ -13,9 +13,7 @@ import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
-
-// Using a generic engine/mechanic photo for the dummy state
-const DUMMY_HEALTH_IMG = 'https://images.unsplash.com/photo-1606523293883-7182283a0058?auto=format&fit=crop&q=80&w=800';
+import { capturePhoto } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep4Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
@@ -28,8 +26,12 @@ export default function ChecklistStep4Screen() {
     safetyEquipment: null as string | null,
   });
 
-  const handleImagePick = (field: keyof typeof photos) => {
-    setPhotos(prev => ({ ...prev, [field]: DUMMY_HEALTH_IMG }));
+  const handleImagePick = async (field: keyof typeof photos) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setPhotos(prev => ({ ...prev, [field]: photoUri }));
+    }
   };
 
   const handleRemovePhoto = (field: keyof typeof photos) => {

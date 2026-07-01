@@ -14,6 +14,7 @@ import { LocationItem } from '../../src/components/common/LocationItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { VehicleCard } from '../../src/components/common/VehicleCard';
 import { MOCK_TRIP_DETAILS } from '../../src/data/mockData';
+import { openMapForAddress } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep1Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
@@ -48,13 +49,13 @@ export default function ChecklistStep1Screen() {
         <LocationItem
           title="Pickup Location"
           address={trip.locations.pickup}
-          onMapPress={() => console.log('Open Pickup Map')}
+          onMapPress={() => openMapForAddress(trip.locations.pickup)}
         />
 
         <LocationItem
           title="Drop-Off Location"
           address={trip.locations.dropoff}
-          onMapPress={() => console.log('Open Dropoff Map')}
+          onMapPress={() => openMapForAddress(trip.locations.dropoff)}
         />
 
         {/* Assigned Vehicle Card */}

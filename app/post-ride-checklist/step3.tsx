@@ -16,8 +16,7 @@ import { CustomBack } from '../../src/components/common/CustomBack';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { MOCK_POST_RIDE_CHECKLIST } from '../../src/data/mockData';
-
-const DUMMY_INTERIOR_IMG = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800';
+import { capturePhoto } from '../../src/utils/deviceActions';
 
 type RequiredInteriorPhotoId = 'dashboard' | 'driverSide' | 'passengerSide' | 'rearSeats' | 'boot';
 
@@ -39,10 +38,14 @@ export default function PostRideChecklistStep3Screen() {
   const [dashboardRequirement, ...interiorRequirements] = photoRequirements;
   const extractedValues = MOCK_POST_RIDE_CHECKLIST.interiorPhotos.extractedValues;
 
-  const handleDashboardPick = () => {
+  const handleDashboardPick = async () => {
+    const photoUri = await capturePhoto();
+
+    if (!photoUri) return;
+
     setPhotos((currentPhotos) => ({
       ...currentPhotos,
-      dashboard: DUMMY_INTERIOR_IMG,
+      dashboard: photoUri,
     }));
 
     setTimeout(() => {
@@ -57,11 +60,15 @@ export default function PostRideChecklistStep3Screen() {
     }, 800);
   };
 
-  const handleImagePick = (field: RequiredInteriorPhotoId) => {
-    setPhotos((currentPhotos) => ({
-      ...currentPhotos,
-      [field]: DUMMY_INTERIOR_IMG,
-    }));
+  const handleImagePick = async (field: RequiredInteriorPhotoId) => {
+    const photoUri = await capturePhoto();
+
+    if (photoUri) {
+      setPhotos((currentPhotos) => ({
+        ...currentPhotos,
+        [field]: photoUri,
+      }));
+    }
   };
 
   const handleRemovePhoto = (field: RequiredInteriorPhotoId) => {

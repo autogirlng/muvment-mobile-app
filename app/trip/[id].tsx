@@ -21,6 +21,7 @@ import {
   MOCK_TRIP_DETAILS_BY_STAGE,
 } from '../../src/data/mockData';
 import type { TripStageKey } from '../../src/data/mockData';
+import { openMapForAddress } from '../../src/utils/deviceActions';
 
 const getStatusFromBadges = (badges: { label: string }[]) => {
   const labels = badges.map((badge) => badge.label.toUpperCase());
@@ -396,7 +397,7 @@ export default function TripDetailScreen() {
         <LocationItem
           title="Pickup Location" 
           address={trip.locations.pickup} 
-          onMapPress={() => console.log('Open Maps Pickup')} 
+          onMapPress={() => openMapForAddress(trip.locations.pickup)}
         />
 
         <SectionDivider />
@@ -404,7 +405,7 @@ export default function TripDetailScreen() {
         <LocationItem
           title="Drop-Off Location" 
           address={trip.locations.dropoff} 
-          onMapPress={() => console.log('Open Maps Dropoff')} 
+          onMapPress={() => openMapForAddress(trip.locations.dropoff)}
         />
 
         <SectionDivider />

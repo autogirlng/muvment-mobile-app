@@ -22,7 +22,7 @@ export const PhotoUploadCard: React.FC<PhotoUploadCardProps> = ({
   return (
     <TouchableOpacity 
       activeOpacity={0.8} 
-      onPress={isFilled ? undefined : onPress}
+      onPress={onPress}
       className={`h-40 rounded-xl overflow-hidden mb-4 border-2 border-dashed ${
         isFilled ? 'border-[#0673FF]' : 'border-[#D0D5DD] bg-white'
       }`}

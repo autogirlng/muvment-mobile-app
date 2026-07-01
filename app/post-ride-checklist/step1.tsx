@@ -17,6 +17,7 @@ import {
   FLAT_TRIPS_DATA,
   MOCK_TRIP_DETAILS_BY_STAGE,
 } from '../../src/data/mockData';
+import { openMapForAddress } from '../../src/utils/deviceActions';
 
 export default function PostRideChecklistStep1Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
@@ -52,7 +53,7 @@ export default function PostRideChecklistStep1Screen() {
         <LocationItem
           title="Drop-Off Location"
           address={trip.locations.dropoff}
-          onMapPress={() => console.log('Open Dropoff Map')}
+          onMapPress={() => openMapForAddress(trip.locations.dropoff)}
         />
 
         <View className="mb-2 mt-2">
