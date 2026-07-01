@@ -291,7 +291,7 @@ export default function TripDetailScreen() {
           disabled: false,
           showPickupTooltip: false,
           destructive: true,
-          onPress: () => console.log('End ride'),
+          onPress: () => router.push(`/post-ride-checklist/step1?tripId=${encodeURIComponent(routeTripId)}`),
         };
       default:
         return {

@@ -400,3 +400,121 @@ export const MOCK_TRIP_DETAILS_BY_STAGE = {
     timeline: ONGOING_RIDE_TIMELINE,
   },
 } satisfies Record<TripStageKey, MockTripDetails>;
+
+export type PostRidePhotoRequirement = {
+  id: string;
+  title: string;
+  subtitle: string;
+};
+
+export type PostRideSummaryItem = {
+  title: string;
+  subtitle: string;
+};
+
+export const MOCK_POST_RIDE_CHECKLIST = {
+  exteriorPhotos: {
+    required: [
+      {
+        id: 'rightSide',
+        title: 'Right Side',
+        subtitle: 'Right Side: Full side including wheels',
+      },
+      {
+        id: 'leftSide',
+        title: 'Left Side',
+        subtitle: 'Left Side: Full side including wheels',
+      },
+      {
+        id: 'front',
+        title: 'Front',
+        subtitle: 'Front: Including headlights, bumper, plate',
+      },
+      {
+        id: 'back',
+        title: 'Back',
+        subtitle: 'Back: Including taillights, bumper, plate',
+      },
+    ] satisfies PostRidePhotoRequirement[],
+    optionalDamage: {
+      title: 'Additional (Optional)',
+      subtitle: 'Up to 3 damage close-ups',
+      maxPhotos: 3,
+    },
+  },
+  interiorPhotos: {
+    required: [
+      {
+        id: 'dashboard',
+        title: 'Dashboard',
+        subtitle: 'Must show odometer AND fuel gauge clearly',
+      },
+      {
+        id: 'driverSide',
+        title: 'Driver Side',
+        subtitle: 'Seat, door panel, floor area',
+      },
+      {
+        id: 'passengerSide',
+        title: 'Passenger Side',
+        subtitle: 'Seat, floor, glove box',
+      },
+      {
+        id: 'rearSeats',
+        title: 'Rear Seats',
+        subtitle: 'Back seat condition, floor',
+      },
+      {
+        id: 'boot',
+        title: 'Boot/Trunk',
+        subtitle: 'Trunk space, spare tire area',
+      },
+    ] satisfies PostRidePhotoRequirement[],
+    extractedValues: {
+      odometer: '45,287',
+      fuelLevel: '30%',
+      reviewFuelLevel: '45%',
+    },
+  },
+  summaryBefore: [
+    {
+      title: 'Vehicle Info',
+      subtitle: `${MOCK_TRIP_BASE_DETAILS.vehicle.model} - ${MOCK_TRIP_BASE_DETAILS.vehicle.plate}`,
+    },
+    {
+      title: 'Exterior Photos',
+      subtitle: '4 photos captured',
+    },
+    {
+      title: 'Interior Photos',
+      subtitle: '5 photos, odometer: 45,287 km',
+    },
+    {
+      title: 'Health Check',
+      subtitle: 'Oil, coolant, safety equipment verified',
+    },
+    {
+      title: 'Driver Photo',
+      subtitle: 'Identity verified',
+    },
+  ] satisfies PostRideSummaryItem[],
+  summaryAfter: [
+    {
+      title: 'Drop-off Location',
+      subtitle: MOCK_TRIP_BASE_DETAILS.locations.dropoff,
+    },
+    {
+      title: 'Exterior Photos',
+      subtitle: '4 photos captured',
+    },
+    {
+      title: 'Interior Photos',
+      subtitle: '5 photos, odometer: 45,287 km | FL: 45%',
+    },
+  ] satisfies PostRideSummaryItem[],
+  submissionDetails: [
+    'Timestamp: 2/23/2026, 11:08:42 AM',
+    'GPS Coordinates: -26.2041, 28.0473',
+    'Total Completion: 5 min 32 sec',
+  ],
+};
