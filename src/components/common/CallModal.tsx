@@ -9,7 +9,6 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 interface CallModalProps {
   visible: boolean;
@@ -55,45 +54,38 @@ export const CallModal: React.FC<CallModalProps> = ({ visible, onClose, phoneNum
           
           {/* Modal Content container (Prevents touch events from bubbling to overlay) */}
           <TouchableWithoutFeedback>
-            <View className="bg-white rounded-t-[32px] pt-8 pb-12 px-6 items-center shadow-lg">
+            <View className="bg-white rounded-t-[32px] pt-8 pb-10 px-6 items-center shadow-lg">
               
-              <Text className="text-[#101928] font-inter font-semibold text-[17px] mb-8">
+              <Text className="text-[#101928] font-inter font-semibold text-[15px] mb-7">
                 Select a call option to continue
               </Text>
 
-              <View className="flex-row justify-center space-x-8 w-full px-4">
+              <View className="flex-row justify-center w-full">
                 
                 {/* Normal Call Option */}
-                <View className="items-center mx-4">
+                <View className="items-center mr-16">
                   <TouchableOpacity 
                     activeOpacity={0.7}
                     onPress={handleNormalCall}
-                    className="w-15 h-15 rounded-[20px] overflow-hidden shadow-sm"
+                    className="w-[62px] h-[62px] rounded-md bg-[#233250] items-center justify-center shadow-sm"
                   >
-                    <LinearGradient
-                      colors={['#516C9F', '#1D2739']}
-                      start={{ x: 0.5, y: 0 }}
-                      end={{ x: 0.5, y: 1 }}
-                      className="w-full h-full items-center justify-center"
-                    >
-                      <Ionicons name="call" size={32} color="#FFFFFF"/>
-                    </LinearGradient>
+                    <Ionicons name="call" size={36} color="#FFFFFF"/>
                   </TouchableOpacity>
-                  <Text className="font-inter text-[13px] text-[#667185] mt-3">
+                  <Text className="font-inter text-[13px] text-[#667185] mt-5">
                     Normal Call
                   </Text>
                 </View>
 
                 {/* WhatsApp Call Option */}
-                <View className="items-center mx-4">
+                <View className="items-center">
                   <TouchableOpacity 
                     activeOpacity={0.7}
                     onPress={handleWhatsAppCall}
-                    className="w-15 h-15 bg-white border border-[#E4E7EC] rounded-[15px] items-center justify-center shadow-sm"
+                    className="w-[62px] h-[62px] bg-white border border-[#E4E7EC] rounded-md items-center justify-center shadow-sm"
                   >
                     <FontAwesome name="whatsapp" size={40} color="#25D366" />
                   </TouchableOpacity>
-                  <Text className="font-inter text-[13px] text-[#667185] mt-3">
+                  <Text className="font-inter text-[13px] text-[#667185] mt-5">
                     WhatsApp Call
                   </Text>
                 </View>
