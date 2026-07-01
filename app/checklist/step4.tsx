@@ -39,7 +39,8 @@ export default function ChecklistStep4Screen() {
   const isNextEnabled = Object.values(photos).every(val => val !== null);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <View className="flex-1" style={{ flex: 1 }}>
       
       {/* Header with Back Button */}
       <View className="px-4 pt-2 pb-2 z-10">
@@ -48,8 +49,9 @@ export default function ChecklistStep4Screen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
-        bounces={true}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
       >
         
         <View className="px-5">
@@ -105,6 +107,7 @@ export default function ChecklistStep4Screen() {
         disabled={!isNextEnabled}
         onPress={() => router.push(`/checklist/step5?tripId=${encodeURIComponent(activeTripId)}`)}
       />
+      </View>
 
     </SafeAreaView>
   );

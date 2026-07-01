@@ -30,15 +30,17 @@ export default function PostRideChecklistStep1Screen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <View className="flex-1" style={{ flex: 1 }}>
       <View className="px-4 pt-2 pb-2 z-10">
         <CustomBack color="#101928" />
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingBottom: 80 }}
-        bounces={true}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingBottom: 32 }}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
       >
         <StepIndicator currentStep={1} totalSteps={4} />
 
@@ -73,6 +75,7 @@ export default function PostRideChecklistStep1Screen() {
         activeOpacity={0.8}
         onPress={() => router.push(`/post-ride-checklist/step2?tripId=${encodeURIComponent(activeTripId)}`)}
       />
+      </View>
     </SafeAreaView>
   );
 }
