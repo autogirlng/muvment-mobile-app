@@ -14,7 +14,6 @@ export default function PostRideChecklistSuccessScreen() {
         description="Post-ride report submitted successfully."
         buttonText="Back to Home"
         buttonIconName="home"
-        animationSource={null}
         onButtonPress={() => router.replace('/home')}
       />
     </SafeAreaView>

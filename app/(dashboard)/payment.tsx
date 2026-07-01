@@ -20,6 +20,8 @@ import { EmptyState } from '../../src/components/common/EmptyState';
 import { SearchNotFound } from '../../src/components/common/SearchNotFound';
 import { GROUPED_PAYMENTS_DATA } from '../../src/data/mockData';
 
+const DASHBOARD_TAB_BAR_HEIGHT = 85;
+
 type DateFilter = 'Today' | 'Yesterday' | 'Last 7 days' | 'This Month' | null;
 
 const matchesDateFilter = (sectionTitle: string, dateFilter: DateFilter, customDate: Date | null) => {
@@ -47,6 +49,7 @@ const matchesDateFilter = (sectionTitle: string, dateFilter: DateFilter, customD
 
 export default function PaymentsScreen() {
   const insets = useSafeAreaInsets();
+  const listBottomPadding = DASHBOARD_TAB_BAR_HEIGHT + Math.max(insets.bottom, 16) + 24;
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>(null);
   const [customDate, setCustomDate] = useState<Date | null>(null);
@@ -143,7 +146,7 @@ export default function PaymentsScreen() {
       </View>
 
       {/* Main Content Area: 3-Way Conditional Render */}
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }} bounces={true}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: listBottomPadding }} bounces={true}>
         
         {hasNoPaymentsAtAll ? (
           

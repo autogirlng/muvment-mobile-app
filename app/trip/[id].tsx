@@ -334,11 +334,13 @@ export default function TripDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <View className={`${statusStyle.banner} px-4 py-3 w-full`}>
-        <Text className="text-white font-inter font-medium text-center text-[14px]">
-          {trip.bannerMessage}
-        </Text>
-      </View>
+      {trip.status !== 'COMPLETE' && (
+        <View className={`${statusStyle.banner} px-4 py-3 w-full`}>
+          <Text className="text-white font-inter font-medium text-center text-[14px]">
+            {trip.bannerMessage}
+          </Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} bounces={true}>
         {trip.status === 'ONGOING' && (

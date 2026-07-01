@@ -20,6 +20,8 @@ import { DropdownMenu } from '../../src/components/common/SearchBarMenu';
 import { DatePickerModal } from '../../src/components/common/DatePicker';
 import { GROUPED_TRIPS_DATA } from '../../src/data/mockData';
 
+const DASHBOARD_TAB_BAR_HEIGHT = 85;
+
 type TripSection = (typeof GROUPED_TRIPS_DATA)[number];
 type Trip = TripSection['data'][number];
 type TripFilter = 'All' | 'Upcoming' | 'Ongoing' | 'Completed' | 'Cancelled';
@@ -78,6 +80,7 @@ const matchesSearch = (trip: Trip, query: string) => {
 
 export default function TripsScreen() {
   const insets = useSafeAreaInsets();
+  const listBottomPadding = DASHBOARD_TAB_BAR_HEIGHT + Math.max(insets.bottom, 16) + 24;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TripFilter>('All');
   const [dateFilter, setDateFilter] = useState<DateFilter>(null);
@@ -211,7 +214,7 @@ export default function TripsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }} bounces={true}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: listBottomPadding }} bounces={true}>
         {visibleSections.length > 0 ? (
           visibleSections.map((section) => (
             <View key={section.title} className="pt-4">
