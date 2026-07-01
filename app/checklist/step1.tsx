@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { LocationItem } from '../../src/components/common/LocationItem';
@@ -18,16 +19,10 @@ export default function ChecklistStep1Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const trip = MOCK_TRIP_DETAILS;
   const activeTripId = tripId ?? '1';
-  const [expandedLocation, setExpandedLocation] = useState<'pickup' | 'dropoff' | null>(null);
-
-  const toggleLocation = (location: 'pickup' | 'dropoff') => {
-    setExpandedLocation((currentLocation) => (
-      currentLocation === location ? null : location
-    ));
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
       <View className="flex-1" style={{ flex: 1 }}>
       
       {/* Header with Back Button */}
@@ -53,26 +48,12 @@ export default function ChecklistStep1Screen() {
         <LocationItem
           title="Pickup Location"
           address={trip.locations.pickup}
-          showDropdown
-          details={[
-            trip.itinerary[0],
-            trip.itinerary[3],
-          ]}
-          isExpanded={expandedLocation === 'pickup'}
-          onToggle={() => toggleLocation('pickup')}
           onMapPress={() => console.log('Open Pickup Map')}
         />
 
         <LocationItem
           title="Drop-Off Location"
           address={trip.locations.dropoff}
-          showDropdown
-          details={[
-            trip.itinerary[1],
-            trip.itinerary[2],
-          ]}
-          isExpanded={expandedLocation === 'dropoff'}
-          onToggle={() => toggleLocation('dropoff')}
           onMapPress={() => console.log('Open Dropoff Map')}
         />
 

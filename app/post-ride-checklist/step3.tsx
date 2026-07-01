@@ -10,6 +10,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
+import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
@@ -82,6 +83,7 @@ export default function PostRideChecklistStep3Screen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
       <View className="flex-1" style={{ flex: 1 }}>
       <View className="px-4 pt-2 pb-2 z-10">
         <CustomBack color="#101928" />

@@ -11,6 +11,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
+import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
@@ -73,6 +74,7 @@ export default function ChecklistStep3Screen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
       <View className="flex-1" style={{ flex: 1 }}>
       
       {/* Header with Back Button */}

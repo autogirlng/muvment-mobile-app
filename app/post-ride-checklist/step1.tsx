@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { LocationItem } from '../../src/components/common/LocationItem';
@@ -22,7 +23,6 @@ export default function PostRideChecklistStep1Screen() {
   const activeTripId = tripId ?? '1';
   const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === activeTripId);
   const trip = MOCK_TRIP_DETAILS_BY_STAGE.ongoing;
-  const [isDropoffExpanded, setIsDropoffExpanded] = useState(false);
 
   const [vehicleModel, vehiclePlate] = selectedTrip?.vehicle.split('•').map((value) => value.trim()) ?? [
     trip.vehicle.model,
@@ -31,6 +31,7 @@ export default function PostRideChecklistStep1Screen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
       <View className="flex-1" style={{ flex: 1 }}>
       <View className="px-4 pt-2 pb-2 z-10">
         <CustomBack color="#101928" />
@@ -51,13 +52,6 @@ export default function PostRideChecklistStep1Screen() {
         <LocationItem
           title="Drop-Off Location"
           address={trip.locations.dropoff}
-          showDropdown
-          details={[
-            trip.itinerary[1],
-            trip.itinerary[3],
-          ]}
-          isExpanded={isDropoffExpanded}
-          onToggle={() => setIsDropoffExpanded((isExpanded) => !isExpanded)}
           onMapPress={() => console.log('Open Dropoff Map')}
         />
 

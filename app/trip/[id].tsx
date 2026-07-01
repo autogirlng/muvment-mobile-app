@@ -10,6 +10,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 
+import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { TimelineTracker } from '../../src/components/common/TimelineTracker';
 import { LocationItem } from '../../src/components/common/LocationItem';
 import { CallModal } from '../../src/components/common/CallModal';
@@ -316,6 +317,7 @@ export default function TripDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
       
       {/* Header */}
       <View className="px-4 pt-2 pb-4 z-10">
