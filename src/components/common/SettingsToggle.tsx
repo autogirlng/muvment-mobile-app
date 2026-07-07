@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 interface SettingsToggleProps {
+  disabled?: boolean;
   iconName: keyof typeof Feather.glyphMap;
   title: string;
   description: string;
@@ -11,6 +12,7 @@ interface SettingsToggleProps {
 }
 
 export const SettingsToggle: React.FC<SettingsToggleProps> = ({
+  disabled = false,
   iconName,
   title,
   description,
@@ -33,10 +35,11 @@ export const SettingsToggle: React.FC<SettingsToggleProps> = ({
 
       <TouchableOpacity
         activeOpacity={0.8}
+        disabled={disabled}
         onPress={() => onValueChange(!value)}
         className={`w-14 h-8 rounded-full flex-row items-center ${
           value ? 'bg-[#1D2739]' : 'bg-[#D0D5DD]'
-        }`}
+        } ${disabled ? 'opacity-60' : ''}`}
       >
         {/* The small vertical indicator line (visible when active) */}
         {value && (

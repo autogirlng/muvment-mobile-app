@@ -22,6 +22,10 @@ import {
 } from '../../src/data/mockData';
 import type { TripStageKey } from '../../src/data/mockData';
 import { openMapForAddress } from '../../src/utils/deviceActions';
+import {
+  getDriverTripBookingTimerType,
+  type DriverTripBookingTimerType,
+} from '../../src/utils/driverTrips';
 
 const getStatusFromBadges = (badges: { label: string }[]) => {
   const labels = badges.map((badge) => badge.label.toUpperCase());
@@ -93,7 +97,7 @@ const getStageFromStatus = (status: string): TripStageKey | null => {
   }
 };
 
-type RideTimerType = 'airport' | 'standard' | 'full-day';
+type RideTimerType = DriverTripBookingTimerType;
 
 const getStringParam = (value?: string | string[]) => (
   Array.isArray(value) ? value[0] : value
@@ -102,16 +106,7 @@ const getStringParam = (value?: string | string[]) => (
 const getRideTimerType = (rideType?: string | string[], rentalType?: string): RideTimerType => {
   const normalizedRideType = getStringParam(rideType);
 
-  if (normalizedRideType === 'airport') return 'airport';
-  if (normalizedRideType === 'standard') return 'standard';
-  if (normalizedRideType === 'full-day') return 'full-day';
-
-  const normalizedRentalType = rentalType?.toLowerCase() ?? '';
-
-  if (normalizedRentalType.includes('airport')) return 'airport';
-  if (normalizedRentalType.includes('standard')) return 'standard';
-
-  return 'full-day';
+  return getDriverTripBookingTimerType(normalizedRideType || rentalType);
 };
 
 const getRideTimerConfig = (rideType: RideTimerType) => {

@@ -69,21 +69,21 @@ export const TripCard: React.FC<TripCardProps> = ({
       </Text>
 
       <View className="space-y-3 mb-4">
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mb-2">
           <Feather name="map-pin" size={16} color="#98A2B3" />
           <Text className="ml-2 font-inter text-[#475367] text-sm flex-1">
             {location}
           </Text>
         </View>
 
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mb-2">
           <Ionicons name="car-outline" size={16} color="#98A2B3" />
           <Text className="ml-2 font-inter text-[#475367] text-sm flex-1">
             {vehicle}
           </Text>
         </View>
 
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mb-2">
           <Feather name="clock" size={16} color="#98A2B3" />
           <Text className="ml-2 font-inter text-[#475367] text-sm flex-1">
             {timeRange}

@@ -15,27 +15,44 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { CustomInput } from '../../src/components/common/CustomInput';
 import { CustomButton } from '../../src/components/common/CustomButton';
+import { useLogin } from '../../src/api/hooks/useAuth';
+import { getApiErrorMessage } from '../../src/api/errors';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const login = useLogin();
 
   // Evaluates to true immediately with the initial values
   const isFormValid = email.trim().length > 0 && password.length > 0;
+  const backendError = getApiErrorMessage(login.error);
 
-  const handleLogin = () => {
-    // 1. Fire the custom toast
-    Toast.show({
-      type: 'successToast',
-      text1: 'Login Successful',
-      position: 'top',
-      topOffset: 60,
-    });
+  const handleLogin = async () => {
+    try {
+      await login.mutateAsync({
+        email: email.trim(),
+        password,
+      });
 
-    // 2. Wait 1.5 seconds, then route to the dashboard
-    setTimeout(() => {
-      router.replace("/home");
-    }, 1500);
+      Toast.show({
+        type: 'successToast',
+        text1: 'Login Successful',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      setTimeout(() => {
+        router.replace("/home");
+      }, 1500);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Login failed',
+        text2: getApiErrorMessage(error) || 'Please check your email and password',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
   };
 
   return (
@@ -83,6 +100,8 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               isPassword 
+              hasError={Boolean(backendError)}
+              errorMessage={backendError}
             />
 
             <TouchableOpacity className="self-end mb-8 mt-1"
@@ -94,8 +113,8 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <CustomButton
-              title="Sign in"
-              disabled={!isFormValid}
+              title={login.isPending ? "Signing in..." : "Sign in"}
+              disabled={!isFormValid || login.isPending}
               onPress={handleLogin}
             />
 

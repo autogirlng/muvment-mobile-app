@@ -15,17 +15,26 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { CustomInput } from '../../src/components/common/CustomInput';
 import { CustomButton } from '../../src/components/common/CustomButton';
+import { useForgotPassword } from '../../src/api/hooks/useAuth';
+import { usePasswordReset } from '../../src/context/PasswordResetContext';
+import { getApiErrorMessage } from '../../src/api/errors';
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState('');
+  const forgotPassword = useForgotPassword();
+  const passwordReset = usePasswordReset();
 
   // Button becomes active when email is typed
   const isFormValid = email.trim().length > 0;
+  const backendError = getApiErrorMessage(forgotPassword.error);
 
   const handleSendCode = async () => {
     try {
-      // Integrate your existing apiClient here
-      // e.g., await apiClient.post('/auth/forgot-password', { email });
+      const trimmedEmail = email.trim();
+
+      await forgotPassword.mutateAsync({ email: trimmedEmail });
+      passwordReset.setEmail(trimmedEmail);
+      passwordReset.setOtp('');
 
       Toast.show({
         type: 'successToast',
@@ -40,7 +49,7 @@ export default function ResetPasswordScreen() {
       Toast.show({
         type: 'errorToast',
         text1: 'Failed to send code',
-        text2: 'Please check the email and try again',
+        text2: getApiErrorMessage(error) || 'Please check the email and try again',
         position: 'top',
         topOffset: 60,
       });
@@ -89,12 +98,14 @@ export default function ResetPasswordScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              hasError={Boolean(backendError)}
+              errorMessage={backendError}
             />
 
             <View className="mt-2">
               <CustomButton
-                title="Send Verification Code"
-                disabled={!isFormValid}
+                title={forgotPassword.isPending ? "Sending..." : "Send Verification Code"}
+                disabled={!isFormValid || forgotPassword.isPending}
                 onPress={handleSendCode}
               />
             </View>

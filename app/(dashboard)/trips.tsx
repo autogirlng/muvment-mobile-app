@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -18,64 +19,101 @@ import { SearchNotFound } from '../../src/components/common/SearchNotFound';
 import { TripCard } from '../../src/components/common/TripCard';
 import { DropdownMenu } from '../../src/components/common/SearchBarMenu';
 import { DatePickerModal } from '../../src/components/common/DatePicker';
-import { GROUPED_TRIPS_DATA } from '../../src/data/mockData';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useDriverTrips } from '../../src/api/hooks/useTrips';
+import type {
+  DriverTrip,
+  DriverTripStatus,
+} from '../../src/api/types';
+import {
+  formatApiDate,
+  getDriverTripStatus,
+  groupDriverTripsForCards,
+  UPCOMING_DRIVER_TRIP_STATUSES,
+} from '../../src/utils/driverTrips';
 
 const DASHBOARD_TAB_BAR_HEIGHT = 85;
+const TRIPS_PAGE_SIZE = 50;
 
-type TripSection = (typeof GROUPED_TRIPS_DATA)[number];
-type Trip = TripSection['data'][number];
 type TripFilter = 'All' | 'Upcoming' | 'Ongoing' | 'Completed' | 'Cancelled';
 type DateFilter = 'Today' | 'Yesterday' | 'Last 7 days' | 'This Month' | null;
 
-const getTripStatus = (trip: Trip): TripFilter => {
-  const labels = trip.badges.map((badge) => badge.label.toUpperCase());
-
-  if (labels.includes('ONGOING')) return 'Ongoing';
-  if (labels.includes('COMPLETE') || labels.includes('COMPLETED')) return 'Completed';
-  if (labels.includes('CANCELLED')) return 'Cancelled';
-
-  return 'Upcoming';
+const TRIP_STATUS_BY_TAB: Partial<Record<TripFilter, DriverTripStatus>> = {
+  Cancelled: 'CANCELLED',
+  Completed: 'COMPLETE',
+  Ongoing: 'ONGOING',
 };
 
-const matchesDateFilter = (sectionTitle: string, dateFilter: DateFilter, customDate: Date | null) => {
-  const normalizedTitle = sectionTitle.toLowerCase();
+const addDays = (date: Date, days: number) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+};
 
+const getDateRangeParams = (dateFilter: DateFilter, customDate: Date | null) => {
   if (customDate) {
-    const selectedDay = customDate.getDate();
-    const selectedMonth = new Intl.DateTimeFormat('en-US', { month: 'short' })
-      .format(customDate)
-      .toLowerCase();
+    const selectedDate = formatApiDate(customDate);
 
-    return normalizedTitle.includes(String(selectedDay)) && normalizedTitle.includes(selectedMonth);
+    return {
+      endDate: selectedDate,
+      startDate: selectedDate,
+    };
   }
 
-  if (!dateFilter || dateFilter === 'This Month') return true;
-  if (dateFilter === 'Today') return normalizedTitle.includes('today');
-  if (dateFilter === 'Yesterday') return normalizedTitle.includes('yesterday');
+  if (!dateFilter) {
+    return {};
+  }
 
-  return (
-    normalizedTitle.includes('today') ||
-    normalizedTitle.includes('yesterday') ||
-    normalizedTitle.includes('tomorrow') ||
-    normalizedTitle.includes('last week')
-  );
+  const today = new Date();
+
+  if (dateFilter === 'Today') {
+    const selectedDate = formatApiDate(today);
+
+    return {
+      endDate: selectedDate,
+      startDate: selectedDate,
+    };
+  }
+
+  if (dateFilter === 'Yesterday') {
+    const selectedDate = formatApiDate(addDays(today, -1));
+
+    return {
+      endDate: selectedDate,
+      startDate: selectedDate,
+    };
+  }
+
+  if (dateFilter === 'Last 7 days') {
+    return {
+      endDate: formatApiDate(today),
+      startDate: formatApiDate(addDays(today, -6)),
+    };
+  }
+
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  return {
+    endDate: formatApiDate(lastDayOfMonth),
+    startDate: formatApiDate(firstDayOfMonth),
+  };
 };
 
-const matchesSearch = (trip: Trip, query: string) => {
-  const normalizedQuery = query.trim().toLowerCase();
+const matchesActiveTab = (trip: DriverTrip, activeTab: TripFilter) => {
+  const tripStatus = getDriverTripStatus(trip);
 
-  if (!normalizedQuery) return true;
+  if (activeTab === 'All') {
+    return true;
+  }
 
-  const searchableText = [
-    trip.clientName,
-    trip.location,
-    trip.vehicle,
-    trip.timeRange,
-    trip.tripId,
-    ...trip.badges.map((badge) => badge.label),
-  ].join(' ').toLowerCase();
+  if (activeTab === 'Upcoming') {
+    return !tripStatus || UPCOMING_DRIVER_TRIP_STATUSES.includes(tripStatus);
+  }
 
-  return searchableText.includes(normalizedQuery);
+  const expectedStatus = TRIP_STATUS_BY_TAB[activeTab];
+
+  return !tripStatus || tripStatus === expectedStatus;
 };
 
 export default function TripsScreen() {
@@ -87,17 +125,38 @@ export default function TripsScreen() {
   const [customDate, setCustomDate] = useState<Date | null>(null);
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const selectedTripStatus = TRIP_STATUS_BY_TAB[activeTab];
+  const dateRangeParams = useMemo(
+    () => getDateRangeParams(dateFilter, customDate),
+    [customDate, dateFilter],
+  );
+  const driverTripsQuery = useDriverTrips({
+    page: 0,
+    search: searchQuery,
+    size: TRIPS_PAGE_SIZE,
+    tripStatus: selectedTripStatus,
+    ...dateRangeParams,
+  });
+  const upcomingTripsCountQuery = useDriverTrips({
+    page: 0,
+    size: 1,
+    tripStatus: 'NOT_STARTED',
+  });
+  const driverTrips = driverTripsQuery.data?.data.content ?? [];
 
   const upcomingCount = useMemo(
-    () => GROUPED_TRIPS_DATA.reduce((count, section) => (
-      count + section.data.filter((trip) => getTripStatus(trip) === 'Upcoming').length
-    ), 0),
-    []
+    () => upcomingTripsCountQuery.data?.data.totalItems ?? 0,
+    [upcomingTripsCountQuery.data?.data.totalItems],
   );
 
   const filterTabs: { label: string; value: TripFilter }[] = [
     { label: 'All', value: 'All' },
-    { label: `Upcoming (${upcomingCount})`, value: 'Upcoming' },
+    {
+      label: upcomingTripsCountQuery.isLoading
+        ? 'Upcoming'
+        : `Upcoming (${upcomingCount})`,
+      value: 'Upcoming',
+    },
     { label: 'Ongoing', value: 'Ongoing' },
     { label: 'Completed', value: 'Completed' },
     { label: 'Cancelled', value: 'Cancelled' },
@@ -105,6 +164,7 @@ export default function TripsScreen() {
 
   const dropdownOptions = [
     'All',
+    'Upcoming',
     'Ongoing',
     'Completed',
     'Cancelled',
@@ -115,29 +175,26 @@ export default function TripsScreen() {
     'Custom Date',
   ];
 
-  const visibleSections = useMemo(() => {
-    return GROUPED_TRIPS_DATA
-      .map((section) => {
-        if (!matchesDateFilter(section.title, dateFilter, customDate)) {
-          return { ...section, data: [] };
-        }
+  const visibleTrips = useMemo(() => (
+    driverTrips.filter((trip) => matchesActiveTab(trip, activeTab))
+  ), [activeTab, driverTrips]);
 
-        return {
-          ...section,
-          data: section.data.filter((trip) => {
-            const matchesTab = activeTab === 'All' || getTripStatus(trip) === activeTab;
-            return matchesTab && matchesSearch(trip, searchQuery);
-          }),
-        };
-      })
-      .filter((section) => section.data.length > 0);
-  }, [activeTab, customDate, dateFilter, searchQuery]);
+  const fallbackStatus = selectedTripStatus ?? (
+    activeTab === 'Upcoming' ? 'NOT_STARTED' : undefined
+  );
+
+  const visibleSections = useMemo(() => {
+    return groupDriverTripsForCards(visibleTrips, fallbackStatus);
+  }, [fallbackStatus, visibleTrips]);
 
   // Derived state for dynamic search labels
   const isSearching = searchQuery.trim().length > 0;
   const totalFound = useMemo(() => {
     return visibleSections.reduce((acc, section) => acc + section.data.length, 0);
   }, [visibleSections]);
+  const isLoadingTrips = driverTripsQuery.isLoading;
+  const isTripsError = driverTripsQuery.isError;
+  const tripsErrorMessage = getApiErrorMessage(driverTripsQuery.error);
 
   const handleDropdownSelect = (option: string) => {
     setMenuVisible(false);
@@ -147,7 +204,7 @@ export default function TripsScreen() {
       return;
     }
 
-    if (['All', 'Ongoing', 'Completed', 'Cancelled'].includes(option)) {
+    if (['All', 'Upcoming', 'Ongoing', 'Completed', 'Cancelled'].includes(option)) {
       setActiveTab(option as TripFilter);
       setDateFilter(null);
       setCustomDate(null);
@@ -171,7 +228,7 @@ export default function TripsScreen() {
       />
 
       {/* Dynamic "X Trips Found" text that only appears when searching */}
-      {isSearching && (
+      {isSearching && !isLoadingTrips && !isTripsError && (
         <View className="px-5 pb-3">
           <Text className="font-inter font-semibold text-[13px] text-[#101928]">
             {totalFound} Trip{totalFound !== 1 ? 's' : ''} Found
@@ -214,8 +271,28 @@ export default function TripsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: listBottomPadding }} bounces={true}>
-        {visibleSections.length > 0 ? (
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: listBottomPadding }}
+        bounces={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={driverTripsQuery.isRefetching && !isLoadingTrips}
+            onRefresh={driverTripsQuery.refetch}
+            tintColor="#1E3A5F"
+          />
+        }
+      >
+        {isLoadingTrips ? (
+          <EmptyState
+            title="Loading trips"
+            description="Fetching your assigned trips."
+          />
+        ) : isTripsError ? (
+          <EmptyState
+            title="Unable to load trips"
+            description={tripsErrorMessage ?? "Please check your connection and try again."}
+          />
+        ) : visibleSections.length > 0 ? (
           visibleSections.map((section) => (
             <View key={section.title} className="pt-4">
               <Text className="font-inter text-sm text-[#475367] px-4 mb-3">

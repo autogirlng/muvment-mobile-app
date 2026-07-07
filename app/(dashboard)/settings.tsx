@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
+  AppState,
+  Linking,
   View, 
   Text, 
   TouchableOpacity, 
@@ -9,25 +11,175 @@ import {
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import * as Location from 'expo-location';
 
 import { DashboardHeader } from '../../src/components/layout/DashboardHeader';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { SettingsToggle } from '../../src/components/common/SettingsToggle';
 
+interface SettingsActionRowProps {
+  iconName: keyof typeof Feather.glyphMap;
+  title: string;
+  description: string;
+  onPress: () => void;
+}
+
+const SettingsActionRow = ({
+  iconName,
+  title,
+  description,
+  onPress,
+}: SettingsActionRowProps) => (
+  <TouchableOpacity
+    activeOpacity={0.8}
+    onPress={onPress}
+    className="flex-row items-center justify-between px-6 py-4"
+  >
+    <View className="flex-row items-center flex-1 pr-4">
+      <Feather name={iconName} size={20} color="#475367" />
+      <View className="ml-4">
+        <Text className="text-brand-primary font-inter font-medium text-base mb-0.5">
+          {title}
+        </Text>
+        <Text className="text-brand-secondary font-inter text-sm">
+          {description}
+        </Text>
+      </View>
+    </View>
+    <Feather name="chevron-right" size={20} color="#98A2B3" />
+  </TouchableOpacity>
+);
+
+const isLocationPermissionGranted = (permission: {
+  granted?: boolean;
+  status?: string;
+}) => permission.granted === true || permission.status === 'granted';
+
+const openAppSettings = async () => {
+  try {
+    await Linking.openSettings();
+  } catch {
+    await Linking.openURL('app-settings:');
+  }
+};
+
 export default function SettingsScreen() {
   const [pushNotifications, setPushNotifications] = useState(true);
-  const [locationServices, setLocationServices] = useState(true);
+  const [locationServices, setLocationServices] = useState(false);
+  const [isLocationPermissionLoading, setLocationPermissionLoading] = useState(false);
   
   // State to control the visibility of the confirmation modal
   const [isSignOutModalVisible, setSignOutModalVisible] = useState(false);
+
+  const syncLocationPermission = async () => {
+    try {
+      const permission = await Location.getForegroundPermissionsAsync();
+      setLocationServices(isLocationPermissionGranted(permission));
+    } catch {
+      setLocationServices(false);
+    }
+  };
+
+  useEffect(() => {
+    void syncLocationPermission();
+
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void syncLocationPermission();
+      }
+    });
+
+    return () => appStateSubscription.remove();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    setLocationPermissionLoading(true);
+
+    try {
+      let permission = await Location.getForegroundPermissionsAsync();
+
+      if (!isLocationPermissionGranted(permission) && permission.canAskAgain) {
+        permission = await Location.requestForegroundPermissionsAsync();
+      }
+
+      if (isLocationPermissionGranted(permission)) {
+        setLocationServices(true);
+
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+
+        if (!servicesEnabled) {
+          Toast.show({
+            type: 'errorToast',
+            text1: 'Turn on device location',
+            text2: 'Location permission is enabled, but device location services are off.',
+            position: 'top',
+            topOffset: 60,
+          });
+          return;
+        }
+
+        Toast.show({
+          type: 'successToast',
+          text1: 'Location enabled',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+
+      setLocationServices(false);
+
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Location permission required',
+        text2: permission.canAskAgain
+          ? 'Please allow location access to use navigation.'
+          : 'Turn on location access in your app settings.',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      if (!permission.canAskAgain) {
+        setTimeout(() => {
+          void openAppSettings();
+        }, 500);
+      }
+    } catch {
+      setLocationServices(false);
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Unable to enable location',
+        text2: 'Please try again from your device settings.',
+        position: 'top',
+        topOffset: 60,
+      });
+    } finally {
+      setLocationPermissionLoading(false);
+    }
+  };
+
+  const handleLocationServicesChange = async (nextValue: boolean) => {
+    if (nextValue) {
+      await requestLocationPermission();
+      return;
+    }
+
+    Toast.show({
+      type: 'errorToast',
+      text1: 'Manage location in Settings',
+      text2: 'Location permission can only be turned off from your device settings.',
+      position: 'top',
+      topOffset: 60,
+    });
+    await openAppSettings();
+  };
 
   const confirmSignOut = () => {
     // 1. Close the modal first
     setSignOutModalVisible(false);
 
-    // 2. API logic to clear tokens goes here
-    // e.g., await apiClient.post('/auth/logout');
+    // 2. Clear stored auth tokens and call logout when that endpoint is available.
     
     // 3. Show success message
     Toast.show({
@@ -59,9 +211,21 @@ export default function SettingsScreen() {
           <SettingsToggle
             iconName="map-pin"
             title="Location Services"
-            description="Required for navigation"
+            description={
+              locationServices
+                ? 'Location access is enabled'
+                : 'Required for navigation'
+            }
             value={locationServices}
-            onValueChange={setLocationServices}
+            onValueChange={handleLocationServicesChange}
+            disabled={isLocationPermissionLoading}
+          />
+
+          <SettingsActionRow
+            iconName="lock"
+            title="Change Password"
+            description="Update your account password"
+            onPress={() => router.push('/change-password')}
           />
         </View>
 

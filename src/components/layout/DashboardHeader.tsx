@@ -1,13 +1,20 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+
+import { useCurrentUser } from '../../api/hooks/useUsers';
+import { getUserInitials } from '../../utils/userProfile';
 
 interface DashboardHeaderProps {
   title: string;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title }) => {
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data?.data;
+  const userInitials = getUserInitials(currentUser);
+
   return (
     <View className="flex-row justify-between items-center px-6 pt-2 pb-4">
       <Text className="text-3xl font-inter font-bold text-[#000000]">
@@ -24,12 +31,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title }) => {
 
         <TouchableOpacity 
           onPress={() => router.push('/profile')}
-          className="w-10 h-10 rounded-full overflow-hidden"
+          className="w-10 h-10 rounded-full bg-[#E0EAFF] items-center justify-center"
         >
-          <Image 
-            source={{ uri: 'https://i.pravatar.cc/150?img=47' }} 
-            className="w-full h-full"
-          />
+          <Text className="font-inter font-bold text-[#1E3A5F] text-sm">
+            {userInitials}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

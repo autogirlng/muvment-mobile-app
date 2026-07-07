@@ -15,6 +15,8 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { CustomInput } from '../../src/components/common/CustomInput';
 import { CustomButton } from '../../src/components/common/CustomButton';
+import { useCreateDriverApplication } from '../../src/api/hooks/useDriverApplications';
+import { getApiErrorMessage } from '../../src/api/errors';
 
 export default function BecomeDriverScreen() {
   const [fullName, setFullName] = useState('');
@@ -22,30 +24,51 @@ export default function BecomeDriverScreen() {
   const [experience, setExperience] = useState('');
   const [phone, setPhone] = useState('');
   const [altPhone, setAltPhone] = useState('');
+  const createDriverApplication = useCreateDriverApplication();
 
   // Validate that all required fields are filled
+  const yearsOfExperience = Number(experience);
   const isFormValid = 
     fullName.trim().length > 0 && 
     email.trim().length > 0 && 
     experience.trim().length > 0 && 
+    Number.isFinite(yearsOfExperience) &&
+    yearsOfExperience >= 0 &&
     phone.trim().length > 0;
+  const backendError = getApiErrorMessage(createDriverApplication.error);
 
-  const handleSubmit = () => {
-    // 1. Submit data to API here...
+  const handleSubmit = async () => {
+    const applicationPayload = {
+      fullName: fullName.trim(),
+      email: email.trim(),
+      primaryPhoneNumber: phone.trim(),
+      yearsOfExperience,
+      ...(altPhone.trim()
+        ? { alternativePhoneNumber: altPhone.trim() }
+        : {}),
+    };
 
-    // 2. Show Success Toast
-    Toast.show({
-      type: 'successToast',
-      text1: 'Application Submitted!',
-      text2: 'We will review your credentials and contact you soon.',
-      position: 'top',
-      topOffset: 60,
-    });
+    try {
+      await createDriverApplication.mutateAsync(applicationPayload);
 
-    // 3. Send them back to the login screen after a short delay
-    setTimeout(() => {
-      router.back();
-    }, 2000);
+      Toast.show({
+        type: 'successToast',
+        text1: 'Application Submitted!',
+        text2: 'We will review your credentials and contact you soon.',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      router.push('/auth/bd-success');
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Application failed',
+        text2: getApiErrorMessage(error) || 'Please check your details and try again',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
   };
 
   return (
@@ -125,13 +148,15 @@ export default function BecomeDriverScreen() {
               value={altPhone}
               onChangeText={setAltPhone}
               keyboardType="phone-pad"
+              hasError={Boolean(backendError)}
+              errorMessage={backendError}
             />
 
             <View className="mt-6 mb-4">
               <CustomButton
-                title="Submit Application"
-                disabled={!isFormValid}
-                onPress={() => router.push('/auth/bd-success')}
+                title={createDriverApplication.isPending ? "Submitting..." : "Submit Application"}
+                disabled={!isFormValid || createDriverApplication.isPending}
+                onPress={handleSubmit}
               />
             </View>
           </View>

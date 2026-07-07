@@ -15,21 +15,20 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { CustomInput } from '../../src/components/common/CustomInput';
 import { CustomButton } from '../../src/components/common/CustomButton';
+import {
+  isPasswordValid,
+  PasswordRequirementChecklist,
+} from '../../src/components/common/PasswordRequirementChecklist';
+import { useResetPassword } from '../../src/api/hooks/useAuth';
+import { usePasswordReset } from '../../src/context/PasswordResetContext';
+import { getApiErrorMessage } from '../../src/api/errors';
 
 export default function CreatePasswordScreen() {
-  // Initialized to show the mismatch error from your design
-  const [newPassword, setNewPassword] = useState('Autogirl!2026');
-  const [confirmPassword, setConfirmPassword] = useState('Autogirl!202'); // Missing the last digit to trigger error
-
-  // Real-time validation rules
-  const validations = {
-    length: newPassword.length >= 8,
-    uppercase: /[A-Z]/.test(newPassword),
-    lowercase: /[a-z]/.test(newPassword),
-    digit: /\d/.test(newPassword),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
-    noSpaces: newPassword.length > 0 && !/\s/.test(newPassword),
-  };
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const resetPassword = useResetPassword();
+  const passwordReset = usePasswordReset();
 
   const passwordsMatch = newPassword === confirmPassword;
   
@@ -37,17 +36,37 @@ export default function CreatePasswordScreen() {
   const showMatchError = confirmPassword.length > 0 && !passwordsMatch;
 
   const isFormValid = 
-    Object.values(validations).every(Boolean) && 
+    isPasswordValid(newPassword) &&
     passwordsMatch;
+  const backendError = getApiErrorMessage(resetPassword.error);
+
+  const shouldShowPasswordRequirements =
+    showPasswordRequirements || newPassword.length > 0;
 
   const handleSetPassword = async () => {
     // Local validation check is technically handled by the disabled button now, 
     // but keeping it here as a safety net is good practice.
     if (!passwordsMatch) return; 
 
-    try {
-      // await apiClient.post('/auth/reset-password', { newPassword });
+    if (!passwordReset.email || !passwordReset.otp) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Verification required',
+        text2: 'Please request and enter your verification code again',
+        position: 'top',
+        topOffset: 60,
+      });
+      router.replace("/auth/reset-password");
+      return;
+    }
 
+    try {
+      await resetPassword.mutateAsync({
+        email: passwordReset.email,
+        otp: passwordReset.otp,
+        newPassword,
+      });
+      passwordReset.clearResetState();
       router.replace("/auth/login");
 
       setTimeout(() => {
@@ -63,27 +82,12 @@ export default function CreatePasswordScreen() {
       Toast.show({
         type: 'errorToast',
         text1: 'Failed to reset password',
-        text2: 'Please try again',
+        text2: getApiErrorMessage(error) || 'Please try again',
         position: 'top',
         topOffset: 60,
       });
     }
   };
-
-  const ValidationItem = ({ label, isValid }: { label: string, isValid: boolean }) => (
-    <View className="flex-row items-center mt-2">
-      <Feather 
-        name={isValid ? "check-circle" : "circle"} 
-        size={16} 
-        color={isValid ? "#039855" : "#98A2B3"} 
-      />
-      <Text 
-        className={`ml-2 font-inter text-sm ${isValid ? "text-[#039855]" : "text-brand-secondary"}`}
-      >
-        {label}
-      </Text>
-    </View>
-  );
 
   return (
     <SafeAreaView className="flex-1 bg-brand-auth">
@@ -120,9 +124,13 @@ export default function CreatePasswordScreen() {
               label="New Password"
               placeholder="Enter new password"
               value={newPassword}
-              onChangeText={setNewPassword}
+              onChangeText={(value) => {
+                setShowPasswordRequirements(true);
+                setNewPassword(value);
+              }}
+              onFocus={() => setShowPasswordRequirements(true)}
               isPassword 
-              hasError={showMatchError} // Turns border red based on design
+              hasError={showMatchError || Boolean(backendError)}
             />
 
             <CustomInput
@@ -135,22 +143,13 @@ export default function CreatePasswordScreen() {
               errorMessage={showMatchError ? "Passwords do not match" : undefined} // Shows text
             />
 
-            {/* Validation Checklist */}
-            <View className="mt-2 mb-8">
-              <Text className="text-brand-primary font-inter font-medium text-sm mb-1">
-                Password must include at least:
-              </Text>
-              <ValidationItem label="8 characters long" isValid={validations.length} />
-              <ValidationItem label="One uppercase character" isValid={validations.uppercase} />
-              <ValidationItem label="One lowercase character" isValid={validations.lowercase} />
-              <ValidationItem label="One digit" isValid={validations.digit} />
-              <ValidationItem label="One special character" isValid={validations.special} />
-              <ValidationItem label="Must not include spaces" isValid={validations.noSpaces} />
-            </View>
+            {shouldShowPasswordRequirements && (
+              <PasswordRequirementChecklist password={newPassword} />
+            )}
 
             <CustomButton
-              title="Set Password"
-              disabled={!isFormValid}
+              title={resetPassword.isPending ? "Setting password..." : "Set Password"}
+              disabled={!isFormValid || resetPassword.isPending}
               onPress={handleSetPassword}
             />
           </View>

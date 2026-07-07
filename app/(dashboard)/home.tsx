@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,12 +9,22 @@ import { StatCard } from '../../src/components/common/StatCard';
 import { TripCard } from '../../src/components/common/TripCard';
 import { EmptyState } from '../../src/components/common/EmptyState';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
-
-// Import the flat data array from your central mock data file
-import { FLAT_TRIPS_DATA } from '../../src/data/mockData';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useDriverTrips } from '../../src/api/hooks/useTrips';
+import { useCurrentUser } from '../../src/api/hooks/useUsers';
+import { toDriverTripCardModel } from '../../src/utils/driverTrips';
+import {
+  getUserDisplayName,
+  getUserInitials,
+} from '../../src/utils/userProfile';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const currentUserQuery = useCurrentUser();
+  const driverTripsQuery = useDriverTrips({
+    page: 0,
+    size: 3,
+  });
   
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
@@ -26,8 +36,15 @@ export default function HomeScreen() {
     year: 'numeric'
   }).format(new Date());
 
-  // Grab only the first 3 trips for the Home dashboard preview
-  const recentTrips = FLAT_TRIPS_DATA.slice(0, 3);
+  const recentTrips = (driverTripsQuery.data?.data.content ?? [])
+    .map((trip) => toDriverTripCardModel(trip));
+  const assignedTripsCount = driverTripsQuery.data?.data.totalItems ?? 0;
+  const tripsErrorMessage = getApiErrorMessage(driverTripsQuery.error);
+  const currentUser = currentUserQuery.data?.data;
+  const driverName = currentUserQuery.isLoading
+    ? 'Loading...'
+    : getUserDisplayName(currentUser);
+  const driverInitials = getUserInitials(currentUser);
 
   return (
     <View className="flex-1 bg-[#FAFAFA]">
@@ -53,7 +70,7 @@ export default function HomeScreen() {
                 {greeting},
               </Text>
               <Text className="text-white font-inter font-bold text-3xl mb-2">
-                Nobert Adebayo
+                {driverName}
               </Text>
               <Text className="text-[#F7F9FC] font-inter text-base">
                 {currentDate}
@@ -70,12 +87,11 @@ export default function HomeScreen() {
 
               <TouchableOpacity 
                 onPress={() => router.push('/profile')}
-                className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"
+                className="w-10 h-10 rounded-full border-2 border-white bg-[#E0EAFF] items-center justify-center"
               >
-                <Image 
-                  source={{ uri: 'https://i.pravatar.cc/150?img=47' }} 
-                  className="w-full h-full"
-                />
+                <Text className="font-inter font-bold text-[#1E3A5F] text-sm">
+                  {driverInitials}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -85,7 +101,7 @@ export default function HomeScreen() {
         <View className="px-6 -mt-14 flex-row gap-x-3 mb-6">
           <StatCard 
             title="Assigned Trips" 
-            value={FLAT_TRIPS_DATA.length.toString()} // Dynamically tied to data length
+            value={driverTripsQuery.isLoading ? '...' : assignedTripsCount.toString()}
             bgColorClass="bg-white"
             icon={<Ionicons name="car-outline" size={20} color="#475367" />}
           />
@@ -98,7 +114,21 @@ export default function HomeScreen() {
         </View>
 
         {/* Conditional Rendering: Populated Trips List or Empty State */}
-        {recentTrips.length > 0 ? (
+        {driverTripsQuery.isLoading ? (
+          <View className="flex-1 pb-10">
+            <EmptyState
+              title="Loading trips"
+              description="Fetching your assigned trips."
+            />
+          </View>
+        ) : driverTripsQuery.isError ? (
+          <View className="flex-1 pb-10">
+            <EmptyState
+              title="Unable to load trips"
+              description={tripsErrorMessage ?? "Please check your connection and try again."}
+            />
+          </View>
+        ) : recentTrips.length > 0 ? (
           <View className="px-6">
             {recentTrips.map((trip) => (
               <TripCard

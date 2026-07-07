@@ -15,15 +15,23 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { CustomOTPInput } from '../../src/components/common/CustomOTPInput';
 import { CustomButton } from '../../src/components/common/CustomButton';
+import { useForgotPassword } from '../../src/api/hooks/useAuth';
+import { usePasswordReset } from '../../src/context/PasswordResetContext';
+import { getApiErrorMessage } from '../../src/api/errors';
 
 export default function VerifyCodeScreen() {
   // Initialized with the exact code from your design to show the active state
   const [otpCode, setOtpCode] = useState('');
+  const forgotPassword = useForgotPassword();
+  const passwordReset = usePasswordReset();
   
   // Set to 0 to show the active "Resend" link state instead of the countdown
   const [timer, setTimer] = useState(0); 
   
   const isFormValid = otpCode.length === 6;
+  const maskedEmail = passwordReset.email
+    ? passwordReset.email.replace(/^(.).+(@.+)$/, '$1***$2')
+    : 'your email';
 
   useEffect(() => {
     if (timer > 0) {
@@ -33,39 +41,62 @@ export default function VerifyCodeScreen() {
   }, [timer]);
 
   const handleVerify = async () => {
-    try {
-      // API call to verify OTP would go here
-      console.log("Verifying code:", otpCode);
-
+    if (!passwordReset.email) {
       Toast.show({
-        type: 'successToast',
-        text1: 'Email verified successfully',
+        type: 'errorToast',
+        text1: 'Email is required',
+        text2: 'Please request a new verification code',
         position: 'top',
         topOffset: 60,
       });
+      router.replace("/auth/reset-password");
+      return;
+    }
 
-      router.replace("/auth/create-password");
+    passwordReset.setOtp(otpCode);
 
+    Toast.show({
+      type: 'successToast',
+      text1: 'Code saved',
+      position: 'top',
+      topOffset: 60,
+    });
+
+    router.replace("/auth/create-password");
+  };
+
+  const handleResendCode = async () => {
+    if (!passwordReset.email) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Email is required',
+        text2: 'Please request a new verification code',
+        position: 'top',
+        topOffset: 60,
+      });
+      router.replace("/auth/reset-password");
+      return;
+    }
+
+    try {
+      await forgotPassword.mutateAsync({ email: passwordReset.email });
+      setTimer(60);
+
+      Toast.show({
+        type: 'successToast',
+        text1: 'Verification code resent',
+        position: 'top',
+        topOffset: 60,
+      });
     } catch (error) {
       Toast.show({
         type: 'errorToast',
-        text1: 'Invalid verification code',
-        text2: 'Please try again or resend the code',
+        text1: 'Failed to resend code',
+        text2: getApiErrorMessage(error) || 'Please try again',
         position: 'top',
         topOffset: 60,
       });
     }
-  };
-
-  const handleResendCode = () => {
-    setTimer(60); 
-    
-    Toast.show({
-      type: 'successToast',
-      text1: 'Verification code resent',
-      position: 'top',
-      topOffset: 60,
-    });
   };
 
   return (
@@ -97,7 +128,7 @@ export default function VerifyCodeScreen() {
             </Text>
             <Text className="text-brand-secondary font-inter text-base leading-6">
               We've sent a 6-digit code to{"\n"}
-              <Text className="underline text-[#475367]">k***e@email.com</Text> 
+              <Text className="underline text-[#475367]">{maskedEmail}</Text>
             </Text>
           </View>
 
@@ -129,9 +160,12 @@ export default function VerifyCodeScreen() {
                   Resend Code in {timer}s
                 </Text>
               ) : (
-                <TouchableOpacity onPress={handleResendCode}>
+                <TouchableOpacity
+                  disabled={forgotPassword.isPending}
+                  onPress={handleResendCode}
+                >
                   <Text className="text-brand-link font-inter text-base">
-                    Didn't get code? Resend
+                    {forgotPassword.isPending ? "Resending..." : "Didn't get code? Resend"}
                   </Text>
                 </TouchableOpacity>
               )}
