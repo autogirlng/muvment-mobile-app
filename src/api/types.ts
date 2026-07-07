@@ -156,6 +156,32 @@ export interface DriverTrip {
   status?: DriverTripStatus | null;
 }
 
+export interface DriverTripLocation {
+  lat?: number | null;
+  lng?: number | null;
+  location?: string | null;
+}
+
+export interface DriverTripDetails {
+  id: string;
+  vehicleId?: string | null;
+  startDateTime?: string | null;
+  endDateTime?: string | null;
+  vehicleIdentifier?: string | null;
+  vehicleName?: string | null;
+  driverName?: string | null;
+  driverPhoneNumber?: string | null;
+  tripDuration?: number | null;
+  city?: string | null;
+  pickupLocation?: DriverTripLocation | null;
+  dropOffLocation?: DriverTripLocation | null;
+  customerName?: string | null;
+  customerPhoneNumber?: string | null;
+  bookingTypeName?: string | null;
+  driverOwnerType?: string | null;
+  tripCustomId?: string | null;
+}
+
 export interface DriverTripsQueryParams {
   page?: number;
   size?: number;
@@ -167,3 +193,5 @@ export interface DriverTripsQueryParams {
 
 export type DriverTripsResponse =
   ApiResponse<PaginatedApiResponseData<DriverTrip>>;
+
+export type DriverTripDetailsResponse = ApiResponse<DriverTripDetails>;

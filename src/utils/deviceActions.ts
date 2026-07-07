@@ -2,10 +2,8 @@ import { Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
-export const openMapForAddress = async (address: string) => {
-  const trimmedAddress = address.trim();
-
-  if (!trimmedAddress) {
+const openMapSearchQuery = async (query: string) => {
+  if (!query) {
     Toast.show({
       type: 'errorToast',
       text1: 'Address unavailable',
@@ -16,7 +14,7 @@ export const openMapForAddress = async (address: string) => {
     return;
   }
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmedAddress)}`;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
   try {
     await Linking.openURL(mapsUrl);
@@ -29,6 +27,28 @@ export const openMapForAddress = async (address: string) => {
       topOffset: 60,
     });
   }
+};
+
+export const openMapForAddress = async (address: string) => {
+  await openMapSearchQuery(address.trim());
+};
+
+export const openMapForCoordinates = async ({
+  address,
+  lat,
+  lng,
+}: {
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}) => {
+  const hasCoordinates =
+    typeof lat === 'number' &&
+    Number.isFinite(lat) &&
+    typeof lng === 'number' &&
+    Number.isFinite(lng);
+
+  await openMapSearchQuery(hasCoordinates ? `${lat},${lng}` : address?.trim() ?? '');
 };
 
 export const capturePhoto = async () => {

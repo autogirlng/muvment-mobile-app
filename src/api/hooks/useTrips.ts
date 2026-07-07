@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { apiFetchClient } from "../client.fetch";
 import type {
+  DriverTripDetailsResponse,
   DriverTripsQueryParams,
   DriverTripsResponse,
 } from "../types";
@@ -43,6 +44,9 @@ const buildDriverTripsPath = ({
   return `${DRIVER_APP_TRIPS_PATH}?${params.toString()}`;
 };
 
+const buildDriverTripPath = (id: string) =>
+  `${DRIVER_APP_TRIPS_PATH}/${encodeURIComponent(id)}`;
+
 export const useDriverTrips = (params: DriverTripsQueryParams = {}) =>
   useQuery<DriverTripsResponse, Error>({
     queryKey: ["driver-trips", params],
@@ -53,5 +57,23 @@ export const useDriverTrips = (params: DriverTripsQueryParams = {}) =>
 
       return response.data;
     },
+    staleTime: 30_000,
+  });
+
+export const useDriverTrip = (id?: string) =>
+  useQuery<DriverTripDetailsResponse, Error>({
+    queryKey: ["driver-trip", id],
+    queryFn: async () => {
+      if (!id) {
+        throw new Error("Missing trip ID.");
+      }
+
+      const response = await apiFetchClient.get<DriverTripDetailsResponse>(
+        buildDriverTripPath(id),
+      );
+
+      return response.data;
+    },
+    enabled: Boolean(id),
     staleTime: 30_000,
   });

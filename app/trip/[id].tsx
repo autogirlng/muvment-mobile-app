@@ -15,14 +15,22 @@ import { TimelineTracker } from '../../src/components/common/TimelineTracker';
 import { LocationItem } from '../../src/components/common/LocationItem';
 import { CallModal } from '../../src/components/common/CallModal';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
+import { EmptyState } from '../../src/components/common/EmptyState';
 import {
   FLAT_TRIPS_DATA,
   MOCK_TRIP_DETAILS,
   MOCK_TRIP_DETAILS_BY_STAGE,
 } from '../../src/data/mockData';
 import type { TripStageKey } from '../../src/data/mockData';
-import { openMapForAddress } from '../../src/utils/deviceActions';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useDriverTrip } from '../../src/api/hooks/useTrips';
+import type {
+  DriverTripDetails,
+  DriverTripLocation,
+} from '../../src/api/types';
+import { openMapForCoordinates } from '../../src/utils/deviceActions';
 import {
+  getDriverTripBookingBadgeLabel,
   getDriverTripBookingTimerType,
   type DriverTripBookingTimerType,
 } from '../../src/utils/driverTrips';
@@ -209,6 +217,68 @@ const getStatusStyle = (status: string) => {
   }
 };
 
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+const timeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+const compact = (value?: string | null) => value?.trim() || undefined;
+
+const parseApiDate = (value?: string | null) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
+const formatDateLabel = (value?: string | null) => {
+  const date = parseApiDate(value);
+
+  return date ? dateFormatter.format(date) : undefined;
+};
+
+const formatScheduleLabel = (startValue?: string | null, endValue?: string | null) => {
+  const startDate = parseApiDate(startValue);
+  const endDate = parseApiDate(endValue);
+
+  if (!startDate || !endDate) {
+    return undefined;
+  }
+
+  return `${timeFormatter.format(startDate)} - ${timeFormatter.format(endDate)}`;
+};
+
+const formatDurationLabel = (duration?: number | null) => {
+  if (duration === undefined || duration === null) {
+    return undefined;
+  }
+
+  return `${duration} hr${duration === 1 ? '' : 's'}`;
+};
+
+const getLocationAddress = (location?: DriverTripLocation | null) =>
+  compact(location?.location);
+
+const getTripItinerary = (tripDetails?: DriverTripDetails) => {
+  const pickupAddress = getLocationAddress(tripDetails?.pickupLocation);
+  const dropOffAddress = getLocationAddress(tripDetails?.dropOffLocation);
+  const itinerary = [
+    pickupAddress ? `Pickup at ${pickupAddress}` : undefined,
+    dropOffAddress ? `Drop off at ${dropOffAddress}` : undefined,
+  ].filter((item): item is string => Boolean(item));
+
+  return itinerary.length > 0 ? itinerary : undefined;
+};
+
 export default function TripDetailScreen() {
   const { id, stage, pickupReady, rideType, remainingSeconds } = useLocalSearchParams<{
     id?: string;
@@ -217,31 +287,66 @@ export default function TripDetailScreen() {
     rideType?: string;
     remainingSeconds?: string;
   }>();
-  const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === id);
+  const tripId = getStringParam(id);
+  const driverTripQuery = useDriverTrip(tripId);
+  const driverTripDetails = driverTripQuery.data?.data;
+  const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === tripId);
   const selectedStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
   const selectedStage = getStageFromParam(stage) ?? getStageFromStatus(selectedStatus);
   const stagedTripDetails = selectedStage ? MOCK_TRIP_DETAILS_BY_STAGE[selectedStage] : MOCK_TRIP_DETAILS;
+  const pickupAddress = getLocationAddress(driverTripDetails?.pickupLocation);
+  const dropOffAddress = getLocationAddress(driverTripDetails?.dropOffLocation);
+  const bookingTypeName = getDriverTripBookingBadgeLabel(driverTripDetails?.bookingTypeName);
   const trip = {
     ...stagedTripDetails,
-    id: selectedTrip?.tripId ?? stagedTripDetails.id,
+    id: compact(driverTripDetails?.tripCustomId) ??
+      driverTripDetails?.id ??
+      selectedTrip?.tripId ??
+      stagedTripDetails.id,
     status: selectedStage ? stagedTripDetails.status : selectedStatus,
     bannerMessage: selectedStage ? stagedTripDetails.bannerMessage : getBannerMessage(selectedStatus),
     client: {
       ...stagedTripDetails.client,
-      name: selectedTrip?.clientName ?? stagedTripDetails.client.name,
+      name: compact(driverTripDetails?.customerName) ??
+        selectedTrip?.clientName ??
+        stagedTripDetails.client.name,
+      phone: compact(driverTripDetails?.customerPhoneNumber) ??
+        stagedTripDetails.client.phone,
     },
     locations: {
       ...stagedTripDetails.locations,
-      pickup: selectedTrip?.location ?? stagedTripDetails.locations.pickup,
+      pickup: pickupAddress ??
+        selectedTrip?.location ??
+        stagedTripDetails.locations.pickup,
+      dropoff: dropOffAddress ?? stagedTripDetails.locations.dropoff,
     },
     vehicle: {
       ...stagedTripDetails.vehicle,
-      model: selectedTrip?.vehicle.split('•')[0]?.trim() ?? stagedTripDetails.vehicle.model,
-      plate: selectedTrip?.vehicle.split('•')[1]?.trim() ?? stagedTripDetails.vehicle.plate,
+      model: compact(driverTripDetails?.vehicleName) ??
+        selectedTrip?.vehicle.split('•')[0]?.trim() ??
+        stagedTripDetails.vehicle.model,
+      plate: compact(driverTripDetails?.vehicleIdentifier) ??
+        selectedTrip?.vehicle.split('•')[1]?.trim() ??
+        stagedTripDetails.vehicle.plate,
     },
+    booking: {
+      ...stagedTripDetails.booking,
+      type: compact(driverTripDetails?.driverOwnerType) ??
+        stagedTripDetails.booking.type,
+      rentalType: bookingTypeName ?? stagedTripDetails.booking.rentalType,
+      date: formatDateLabel(driverTripDetails?.startDateTime) ??
+        stagedTripDetails.booking.date,
+      duration: formatDurationLabel(driverTripDetails?.tripDuration) ??
+        stagedTripDetails.booking.duration,
+      schedule: formatScheduleLabel(
+        driverTripDetails?.startDateTime,
+        driverTripDetails?.endDateTime,
+      ) ?? stagedTripDetails.booking.schedule,
+    },
+    itinerary: getTripItinerary(driverTripDetails) ?? stagedTripDetails.itinerary,
   };
   const statusStyle = getStatusStyle(trip.status);
-  const routeTripId = id ?? selectedTrip?.id ?? '1';
+  const routeTripId = tripId ?? selectedTrip?.id ?? '1';
   const isPickupTimeReached = pickupReady === 'true' || trip.status === 'RUNNING LATE';
   const timerType = getRideTimerType(rideType, trip.booking.rentalType);
   const timerConfig = getRideTimerConfig(timerType);
@@ -253,6 +358,7 @@ export default function TripDetailScreen() {
   const [isCallModalVisible, setIsCallModalVisible] = useState(false);
   const [isPickupTooltipVisible, setIsPickupTooltipVisible] = useState(false);
   const [isEndRideConfirmVisible, setIsEndRideConfirmVisible] = useState(false);
+  const tripDetailsErrorMessage = getApiErrorMessage(driverTripQuery.error);
 
   const SectionDivider = () => <View className="h-[1px] bg-[#E4E7EC] w-full my-3" />;
 
@@ -260,6 +366,21 @@ export default function TripDetailScreen() {
     <Text className="font-inter font-semibold text-[13px] text-[#1F2937] tracking-wider uppercase mb-4">
       {title}
     </Text>
+  );
+
+  const renderBackHeader = () => (
+    <View className="px-4 pt-2 pb-4 z-10">
+      <TouchableOpacity
+        onPress={() => router.back()}
+        className="flex-row items-center ml-[-8px]"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Feather name="chevron-left" size={24} color="#101928" />
+        <Text className="text-[#101928] font-inter text-base ml-1">
+          Back
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 
   const getActionConfig = () => {
@@ -311,23 +432,49 @@ export default function TripDetailScreen() {
 
   const actionConfig = getActionConfig();
 
+  if (!tripId) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        {renderBackHeader()}
+        <EmptyState
+          title="Trip unavailable"
+          description="Missing trip ID. Please go back and select a trip again."
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (driverTripQuery.isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        {renderBackHeader()}
+        <EmptyState
+          title="Loading trip"
+          description="Fetching trip details."
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (driverTripQuery.isError || !driverTripDetails) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        {renderBackHeader()}
+        <EmptyState
+          title="Unable to load trip"
+          description={tripDetailsErrorMessage ?? "Please check your connection and try again."}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
       <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
-      
-      {/* Header */}
-      <View className="px-4 pt-2 pb-4 z-10">
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          className="flex-row items-center ml-[-8px]"
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Feather name="chevron-left" size={24} color="#101928" />
-          <Text className="text-[#101928] font-inter text-base ml-1">
-            Back
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {renderBackHeader()}
 
       {trip.status !== 'COMPLETE' && (
         <View className={`${statusStyle.banner} px-4 py-3 w-full`}>
@@ -394,7 +541,11 @@ export default function TripDetailScreen() {
         <LocationItem
           title="Pickup Location" 
           address={trip.locations.pickup} 
-          onMapPress={() => openMapForAddress(trip.locations.pickup)}
+          onMapPress={() => openMapForCoordinates({
+            address: trip.locations.pickup,
+            lat: driverTripDetails.pickupLocation?.lat,
+            lng: driverTripDetails.pickupLocation?.lng,
+          })}
         />
 
         <SectionDivider />
@@ -402,7 +553,11 @@ export default function TripDetailScreen() {
         <LocationItem
           title="Drop-Off Location" 
           address={trip.locations.dropoff} 
-          onMapPress={() => openMapForAddress(trip.locations.dropoff)}
+          onMapPress={() => openMapForCoordinates({
+            address: trip.locations.dropoff,
+            lat: driverTripDetails.dropOffLocation?.lat,
+            lng: driverTripDetails.dropOffLocation?.lng,
+          })}
         />
 
         <SectionDivider />
