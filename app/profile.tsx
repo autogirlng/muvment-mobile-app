@@ -113,10 +113,9 @@ export default function ProfileScreen() {
               <ProfileInfoRow label="Phone Number" value={currentUser.phoneNumber} />
               <ProfileInfoRow label="User Type" value={currentUser.userType} />
               <ProfileInfoRow
-                label="Driver Identifier"
+                label="Driver ID"
                 value={currentUser.driverIdentifier}
               />
-              <ProfileInfoRow label="User ID" value={currentUser.userId} />
             </View>
           </>
         )}
