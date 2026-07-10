@@ -7,9 +7,9 @@ import {
 } from 'react-native';
 
 import { AppStatusBar } from '../src/components/common/AppStatusBar';
+import { CustomBack } from '../src/components/common/CustomBack';
 import { NotificationCard } from '../src/components/common/NotificationCard';
 import { EmptyState } from '../src/components/common/EmptyState'; // Imported the reusable component
-import { DashboardHeader } from '../src/components/layout/DashboardHeader';
 import { GROUPED_NOTIFICATIONS_DATA } from '../src/data/mockData';
 
 export default function NotificationsScreen() {
@@ -27,7 +27,12 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
       <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
-      <DashboardHeader title="Notifications" />
+      <View className="px-6 pt-2 pb-4">
+        <CustomBack color="#1D2739" className="mb-4" />
+        <Text className="text-3xl font-inter font-bold text-[#000000]">
+          Notifications
+        </Text>
+      </View>
 
       {/* Main Content Area */}
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24, paddingHorizontal: 16 }} bounces={true}>

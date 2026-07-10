@@ -13,6 +13,11 @@ import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import * as Location from 'expo-location';
 
+import { getApiErrorMessage } from '../../src/api/errors';
+import {
+  useDriverNotificationSettings,
+  useToggleDriverNotificationSettings,
+} from '../../src/api/hooks/useDriverSettings';
 import { DashboardHeader } from '../../src/components/layout/DashboardHeader';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
@@ -65,17 +70,41 @@ const openAppSettings = async () => {
 };
 
 export default function SettingsScreen() {
-  const [pushNotifications, setPushNotifications] = useState(true);
+  const notificationSettingsQuery = useDriverNotificationSettings();
+  const toggleDriverNotificationSettings =
+    useToggleDriverNotificationSettings();
   const [locationServices, setLocationServices] = useState(false);
   const [isLocationPermissionLoading, setLocationPermissionLoading] = useState(false);
   
   // State to control the visibility of the confirmation modal
   const [isSignOutModalVisible, setSignOutModalVisible] = useState(false);
 
+  const pushNotifications =
+    notificationSettingsQuery.data?.data.sendNotification ?? false;
+  const isPushNotificationLoading =
+    notificationSettingsQuery.isLoading ||
+    toggleDriverNotificationSettings.isPending;
+  const notificationErrorMessage = getApiErrorMessage(
+    notificationSettingsQuery.error,
+  );
+  const isPushNotificationToggleDisabled =
+    isPushNotificationLoading || !notificationSettingsQuery.data;
+  const pushNotificationDescription = notificationSettingsQuery.isError
+    ? notificationErrorMessage ?? 'Unable to load notification preference'
+    : pushNotifications
+      ? 'Trip alerts are enabled'
+      : 'Trip alerts are off';
+
   const syncLocationPermission = async () => {
     try {
-      const permission = await Location.getForegroundPermissionsAsync();
-      setLocationServices(isLocationPermissionGranted(permission));
+      const [permission, servicesEnabled] = await Promise.all([
+        Location.getForegroundPermissionsAsync(),
+        Location.hasServicesEnabledAsync(),
+      ]);
+
+      setLocationServices(
+        isLocationPermissionGranted(permission) && servicesEnabled,
+      );
     } catch {
       setLocationServices(false);
     }
@@ -104,11 +133,10 @@ export default function SettingsScreen() {
       }
 
       if (isLocationPermissionGranted(permission)) {
-        setLocationServices(true);
-
         const servicesEnabled = await Location.hasServicesEnabledAsync();
 
         if (!servicesEnabled) {
+          setLocationServices(false);
           Toast.show({
             type: 'errorToast',
             text1: 'Turn on device location',
@@ -118,6 +146,8 @@ export default function SettingsScreen() {
           });
           return;
         }
+
+        setLocationServices(true);
 
         Toast.show({
           type: 'successToast',
@@ -175,6 +205,33 @@ export default function SettingsScreen() {
     await openAppSettings();
   };
 
+  const handlePushNotificationsChange = async () => {
+    if (isPushNotificationToggleDisabled) {
+      return;
+    }
+
+    try {
+      const response = await toggleDriverNotificationSettings.mutateAsync();
+
+      Toast.show({
+        type: 'successToast',
+        text1: response.data.sendNotification
+          ? 'Push notifications enabled'
+          : 'Push notifications disabled',
+        position: 'top',
+        topOffset: 60,
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Unable to update notifications',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
+  };
+
   const confirmSignOut = () => {
     // 1. Close the modal first
     setSignOutModalVisible(false);
@@ -203,9 +260,10 @@ export default function SettingsScreen() {
           <SettingsToggle
             iconName="bell"
             title="Push Notifications"
-            description="Receive trip alerts"
+            description={pushNotificationDescription}
             value={pushNotifications}
-            onValueChange={setPushNotifications}
+            onValueChange={handlePushNotificationsChange}
+            disabled={isPushNotificationToggleDisabled}
           />
           
           <SettingsToggle

@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 
 import { AppStatusBar } from '../src/components/common/AppStatusBar';
 import { CustomBack } from '../src/components/common/CustomBack';
@@ -13,18 +14,29 @@ import {
   getUserInitials,
 } from '../src/utils/userProfile';
 
-const ProfileInfoRow = ({ label, value }: { label: string, value: string }) => (
+interface ProfileInfoRowProps {
+  label: string;
+  value: string;
+  valueAccessory?: React.ReactNode;
+}
+
+const ProfileInfoRow = ({
+  label,
+  value,
+  valueAccessory,
+}: ProfileInfoRowProps) => (
   <View className="border-b border-[#E4E7EC] pb-2 mb-4">
     <Text className="text-[#98A2B3] font-inter text-sm mb-1">
       {label}
     </Text>
-    <Text className="text-[#475367] font-inter text-base font-medium">
-      {value}
-    </Text>
+    <View className="flex-row items-center">
+      <Text className="text-[#475367] font-inter text-base font-medium flex-shrink">
+        {value}
+      </Text>
+      {valueAccessory}
+    </View>
   </View>
 );
-
-const getBooleanLabel = (value: boolean) => (value ? 'Yes' : 'No');
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -84,27 +96,27 @@ export default function ProfileScreen() {
                 label="Full Name"
                 value={getUserDisplayName(currentUser)}
               />
-              <ProfileInfoRow label="Email Address" value={currentUser.email} />
+              <ProfileInfoRow
+                label="Email Address"
+                value={currentUser.email}
+                valueAccessory={
+                  currentUser.emailVerified ? (
+                    <Feather
+                      name="check-circle"
+                      size={18}
+                      color="#039855"
+                      style={{ marginLeft: 8 }}
+                    />
+                  ) : undefined
+                }
+              />
               <ProfileInfoRow label="Phone Number" value={currentUser.phoneNumber} />
               <ProfileInfoRow label="User Type" value={currentUser.userType} />
+              <ProfileInfoRow
+                label="Driver Identifier"
+                value={currentUser.driverIdentifier}
+              />
               <ProfileInfoRow label="User ID" value={currentUser.userId} />
-
-              <Text className="text-[#101928] font-inter font-semibold text-lg mt-4 mb-4">
-                Verification
-              </Text>
-
-              <ProfileInfoRow
-                label="Email Verified"
-                value={getBooleanLabel(currentUser.emailVerified)}
-              />
-              <ProfileInfoRow
-                label="Phone Verified"
-                value={getBooleanLabel(currentUser.phoneVerified)}
-              />
-              <ProfileInfoRow
-                label="API Access"
-                value={getBooleanLabel(currentUser.canSeeApi)}
-              />
             </View>
           </>
         )}

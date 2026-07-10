@@ -91,12 +91,22 @@ export interface UserProfile {
   email: string;
   phoneNumber: string;
   userType: string;
+  driverIdentifier: string;
   canSeeApi: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
 }
 
 export type UserProfileResponse = ApiResponse<UserProfile>;
+
+export interface DriverNotificationSettings {
+  sendNotification: boolean;
+  driverId: string;
+  userId: string;
+}
+
+export type DriverNotificationSettingsResponse =
+  ApiResponse<DriverNotificationSettings>;
 
 export interface ChangePasswordPayload {
   oldPassword: string;
