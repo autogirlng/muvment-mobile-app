@@ -37,20 +37,17 @@ export const SettingsToggle: React.FC<SettingsToggleProps> = ({
         activeOpacity={0.8}
         disabled={disabled}
         onPress={() => onValueChange(!value)}
-        className={`w-14 h-8 rounded-full flex-row items-center ${
+        accessibilityRole="switch"
+        accessibilityState={{ checked: value, disabled }}
+        className={`w-14 h-8 rounded-full justify-center ${
           value ? 'bg-[#1D2739]' : 'bg-[#D0D5DD]'
         } ${disabled ? 'opacity-60' : ''}`}
       >
-        {/* The small vertical indicator line (visible when active) */}
-        {value && (
-          <View className="w-[2px] h-3.5 bg-white/50 ml-2.5 rounded-full" />
-        )}
-        
-        {/* The toggle thumb */}
-        <View 
-          className={`w-6 h-6 bg-white rounded-full absolute transition-all duration-200 ${
-            value ? 'right-1' : 'left-1'
-          }`} 
+        <View
+          className="w-6 h-6 bg-white rounded-full"
+          style={{
+            transform: [{ translateX: value ? 28 : 4 }],
+          }}
         />
       </TouchableOpacity>
     </View>

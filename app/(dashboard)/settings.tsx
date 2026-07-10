@@ -78,6 +78,8 @@ export default function SettingsScreen() {
   
   // State to control the visibility of the confirmation modal
   const [isSignOutModalVisible, setSignOutModalVisible] = useState(false);
+  const [isChangePasswordModalVisible, setChangePasswordModalVisible] =
+    useState(false);
 
   const pushNotifications =
     notificationSettingsQuery.data?.data.sendNotification ?? false;
@@ -250,6 +252,11 @@ export default function SettingsScreen() {
     router.replace('/auth/login');
   };
 
+  const confirmChangePassword = () => {
+    setChangePasswordModalVisible(false);
+    router.push('/change-password');
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-[#FAFAFA]">
       <AppStatusBar style="dark" backgroundColor="#FAFAFA" />
@@ -283,7 +290,7 @@ export default function SettingsScreen() {
             iconName="lock"
             title="Change Password"
             description="Update your account password"
-            onPress={() => router.push('/change-password')}
+            onPress={() => setChangePasswordModalVisible(true)}
           />
         </View>
 
@@ -312,6 +319,15 @@ export default function SettingsScreen() {
         message="Are you sure you want to sign out of your account?"
         confirmText="Sign Out"
         confirmVariant="danger"
+      />
+
+      <ConfirmationModal
+        visible={isChangePasswordModalVisible}
+        onClose={() => setChangePasswordModalVisible(false)}
+        onConfirm={confirmChangePassword}
+        title="Change Password"
+        message="Do you want to continue to change your account password?"
+        confirmText="Continue"
       />
 
     </SafeAreaView>
