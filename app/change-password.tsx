@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
 import { AppStatusBar } from '../src/components/common/AppStatusBar';
+import { ConfirmationModal } from '../src/components/common/ConfirmModal';
 import { CustomBack } from '../src/components/common/CustomBack';
 import { CustomButton } from '../src/components/common/CustomButton';
 import { CustomInput } from '../src/components/common/CustomInput';
@@ -26,6 +27,7 @@ export default function ChangePasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [isConfirmModalVisible, setConfirmModalVisible] = useState(false);
   const changePassword = useChangePassword();
   const passwordsMatch = newPassword === confirmPassword;
   const passwordsDiffer = oldPassword.length > 0 &&
@@ -43,10 +45,20 @@ export default function ChangePasswordScreen() {
   const shouldShowPasswordRequirements =
     showPasswordRequirements || newPassword.length > 0;
 
-  const handleChangePassword = async () => {
+  const handleChangePasswordPress = () => {
     if (!isFormValid || changePassword.isPending) {
       return;
     }
+
+    setConfirmModalVisible(true);
+  };
+
+  const handleConfirmChangePassword = async () => {
+    if (!isFormValid || changePassword.isPending) {
+      return;
+    }
+
+    setConfirmModalVisible(false);
 
     try {
       const response = await changePassword.mutateAsync({
@@ -161,11 +173,20 @@ export default function ChangePasswordScreen() {
             <CustomButton
               title={changePassword.isPending ? 'Changing password...' : 'Change Password'}
               disabled={!isFormValid || changePassword.isPending}
-              onPress={handleChangePassword}
+              onPress={handleChangePasswordPress}
             />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ConfirmationModal
+        visible={isConfirmModalVisible}
+        onClose={() => setConfirmModalVisible(false)}
+        onConfirm={handleConfirmChangePassword}
+        title="Change Password"
+        message="Are you sure you want to change your account password?"
+        confirmText={changePassword.isPending ? 'Changing...' : 'Change'}
+      />
     </SafeAreaView>
   );
 }
