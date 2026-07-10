@@ -145,6 +145,39 @@ export interface PaginatedApiResponseData<TData> {
   totalPages: number;
 }
 
+export type NotificationType = "INFO" | "WARNING" | "ERROR" | "SUCCESS";
+export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface UserNotification {
+  createdAt: string;
+  updatedAt?: string | null;
+  id: string;
+  title: string;
+  isRead: boolean;
+  message: string;
+  entityId?: string | null;
+  entityName?: string | null;
+  type: NotificationType;
+  priority: NotificationPriority;
+  isDeleted: boolean;
+}
+
+export interface UserNotificationsPage {
+  content: UserNotification[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  first: boolean;
+}
+
+export type UserNotificationsResponse =
+  ApiResponse<UserNotificationsPage>;
+
+export type MarkNotificationReadResponse =
+  ApiResponse<Record<string, never>>;
+
 export interface DriverTrip {
   id: string;
   vehicleId?: string | null;
