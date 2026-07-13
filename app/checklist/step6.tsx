@@ -16,28 +16,72 @@ import { CustomBack } from '../../src/components/common/CustomBack';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { SummaryCard } from '../../src/components/common/SummaryCard';
+import { getApiErrorMessage } from '../../src/api/errors';
+import {
+  usePreRideChecklistSummary,
+  useSubmitPreRideChecklist,
+} from '../../src/api/hooks/usePreRideChecklist';
+import type { PreRideChecklistSummarySection } from '../../src/api/types';
+
+const getPhotosNotCaptured = (section: PreRideChecklistSummarySection) =>
+  section.photosNotCaptured ?? section.photoNotCaptured ?? 0;
+
+const getPhotoSummaryLabel = (
+  section: PreRideChecklistSummarySection,
+  label: string,
+) => {
+  const missing = getPhotosNotCaptured(section);
+  const status = section.valid ? 'complete' : 'incomplete';
+
+  return `${section.photosCaptured} ${label} captured${
+    missing > 0 ? `, ${missing} missing` : ''
+  } | ${status}`;
+};
 
 export default function ChecklistStep6Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId ?? '1';
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const summaryQuery = usePreRideChecklistSummary(activeTripId);
+  const submitPreRideChecklist = useSubmitPreRideChecklist();
+  const summary = summaryQuery.data?.data;
+  const summaryTimestamp = summaryQuery.data?.timestamp;
+  const checklistIsValid = Boolean(
+    summary?.exteriorPhotos.valid &&
+      summary.interiorPhotos.valid &&
+      summary.vehicleHealthCheckPhotos.valid &&
+      summary.driverPhoto.valid,
+  );
+  const canSubmit =
+    checklistIsValid &&
+    !summaryQuery.isLoading &&
+    !summaryQuery.isError &&
+    !submitPreRideChecklist.isPending;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsConfirmVisible(false);
 
-    // 1. Fire API request to submit the entire checklist payload here
-    
-    // 2. Show Success Toast
-    Toast.show({
-      type: 'successToast',
-      text1: 'Checklist Submitted',
-      text2: 'You are ready to start the trip.',
-      position: 'top',
-      topOffset: 60,
-    });
+    try {
+      await submitPreRideChecklist.mutateAsync({ tripId: activeTripId });
 
-    // 3. Route back to the trip in the checked-in stage.
-    router.replace(`/trip/${encodeURIComponent(activeTripId)}?stage=checked-in`);
+      Toast.show({
+        type: 'successToast',
+        text1: 'Checklist Submitted',
+        text2: 'You are ready to start the trip.',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      router.replace(`/trip/${encodeURIComponent(activeTripId)}?stage=checked-in`);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Checklist submission failed',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
   };
 
   return (
@@ -77,11 +121,42 @@ export default function ChecklistStep6Screen() {
             Checklist Summary
           </Text>
 
-          <SummaryCard title="Vehicle Info" subtitle="Honda Accord - LAG-567-ABJ" />
-          <SummaryCard title="Exterior Photos" subtitle="4 photos captured" />
-          <SummaryCard title="Interior Photos" subtitle="5 photos, odometer: 45,287 km | FL:30%" />
-          <SummaryCard title="Health Check" subtitle="Oil, coolant, safety equipment verified" />
-          <SummaryCard title="Driver Photo" subtitle="Identity verified" />
+          {summaryQuery.isLoading && (
+            <Text className="font-inter text-[#667185] text-[14px] mb-4">
+              Loading checklist summary...
+            </Text>
+          )}
+
+          {summaryQuery.isError && (
+            <Text className="font-inter text-[#E32636] text-[14px] mb-4">
+              {getApiErrorMessage(summaryQuery.error) ?? 'Unable to load checklist summary.'}
+            </Text>
+          )}
+
+          {summary && (
+            <>
+              <SummaryCard
+                title="Vehicle Info"
+                subtitle={`${summary.vehicleInfo.vehicleName} - ${summary.vehicleInfo.vehicleIdentifier}`}
+              />
+              <SummaryCard
+                title="Exterior Photos"
+                subtitle={getPhotoSummaryLabel(summary.exteriorPhotos, 'photos')}
+              />
+              <SummaryCard
+                title="Interior Photos"
+                subtitle={`${getPhotoSummaryLabel(summary.interiorPhotos, 'photos')}, odometer: ${summary.interiorPhotos.metadata?.odometerKM ?? 0} km | FL:${summary.interiorPhotos.metadata?.fuelLevelInPercentage ?? 0}%`}
+              />
+              <SummaryCard
+                title="Health Check"
+                subtitle={getPhotoSummaryLabel(summary.vehicleHealthCheckPhotos, 'photos')}
+              />
+              <SummaryCard
+                title="Driver Photo"
+                subtitle={getPhotoSummaryLabel(summary.driverPhoto, 'photo')}
+              />
+            </>
+          )}
 
           <View className="h-[1px] bg-[#E4E7EC] w-full my-6" />
 
@@ -89,14 +164,24 @@ export default function ChecklistStep6Screen() {
             Submission Details:
           </Text>
 
-          <NumberedListItem index={1} text="Timestamp: 2/23/2026, 11:08:42 AM" />
-          <NumberedListItem index={2} text="GPS Coordinates: -26.2041, 28.0473" />
-          <NumberedListItem index={3} text="Total Completion: 5 min 32 sec" />
+          <NumberedListItem
+            index={1}
+            text={`Timestamp: ${summaryTimestamp ? new Date(summaryTimestamp).toLocaleString() : 'Unavailable'}`}
+          />
+          <NumberedListItem
+            index={2}
+            text={`Total Completion: ${summary?.totalCompletionTime ?? 'Unavailable'}`}
+          />
+          <NumberedListItem
+            index={3}
+            text={`Checklist Status: ${checklistIsValid ? 'Ready to submit' : 'Incomplete'}`}
+          />
         </View>
       </ScrollView>
 
       <ChecklistFooter
-        title="Submit Checklist"
+        title={submitPreRideChecklist.isPending ? 'Submitting...' : 'Submit Checklist'}
+        disabled={!canSubmit}
         onPress={() => setIsConfirmVisible(true)}
       />
       </View>
@@ -105,7 +190,9 @@ export default function ChecklistStep6Screen() {
       <ConfirmationModal 
         visible={isConfirmVisible}
         onClose={() => setIsConfirmVisible(false)}
-        onConfirm={handleSubmit}
+        onConfirm={() => {
+          void handleSubmit();
+        }}
         title="Submit Checklist"
         message="Are you sure you want to Submit Checklist? This action cannot be undone."
         confirmText="Submit"

@@ -6,61 +6,231 @@ import {
   ScrollView
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import Toast from 'react-native-toast-message';
 
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useSubmitExteriorChecklist } from '../../src/api/hooks/usePreRideChecklist';
+import type { ExteriorUploadImage } from '../../src/api/types';
+import {
+  createEmptyChecklistPhoto,
+  isChecklistPhotoUploaded,
+  toChecklistUploadedPhoto,
+  type ChecklistPhotoState,
+} from '../../src/utils/checklistPhotos';
+import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
-// Dummy car image to simulate a picked photo
-const DUMMY_CAR_IMG = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800';
+type RequiredExteriorPhotoKey = 'back' | 'front' | 'left' | 'right';
+
+const requiredExteriorImageTypes: Record<
+  RequiredExteriorPhotoKey,
+  ExteriorUploadImage
+> = {
+  back: 'BACK',
+  front: 'FRONT',
+  left: 'LEFT_SIDE',
+  right: 'RIGHT_SIDE',
+};
 
 export default function ChecklistStep2Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId ?? '1';
+  const submitExteriorChecklist = useSubmitExteriorChecklist();
 
   // State for required photos
   const [requiredPhotos, setRequiredPhotos] = useState({
-    right: DUMMY_CAR_IMG, // Pre-filled for preview purposes
-    left: DUMMY_CAR_IMG,
-    front: null as string | null,
-    back: null as string | null,
+    back: createEmptyChecklistPhoto(),
+    front: createEmptyChecklistPhoto(),
+    left: createEmptyChecklistPhoto(),
+    right: createEmptyChecklistPhoto(),
   });
 
   // State for optional damage photos (Array up to 3)
-  const [damagePhotos, setDamagePhotos] = useState<string[]>([DUMMY_CAR_IMG]);
+  const [damagePhotos, setDamagePhotos] = useState<ChecklistPhotoState[]>([]);
 
-  const handleImagePick = async (field: keyof typeof requiredPhotos) => {
+  const uploadRequiredPhoto = async (field: RequiredExteriorPhotoKey) => {
+    if (requiredPhotos[field].status === 'uploading') {
+      return;
+    }
+
     const photoUri = await capturePhoto();
 
-    if (photoUri) {
-      setRequiredPhotos(prev => ({ ...prev, [field]: photoUri }));
+    if (!photoUri) {
+      return;
+    }
+
+    const uploadType = requiredExteriorImageTypes[field];
+
+    setRequiredPhotos(prev => ({
+      ...prev,
+      [field]: {
+        localUri: photoUri,
+        status: 'uploading',
+      },
+    }));
+
+    try {
+      const uploadResult = await uploadChecklistPhoto(
+        photoUri,
+        `exterior-${uploadType}`,
+      );
+
+      setRequiredPhotos(prev => ({
+        ...prev,
+        [field]: {
+          ...uploadResult,
+          localUri: photoUri,
+          status: 'uploaded',
+        },
+      }));
+    } catch (error) {
+      const message =
+        getApiErrorMessage(error) ?? 'Unable to upload this photo.';
+
+      setRequiredPhotos(prev => ({
+        ...prev,
+        [field]: {
+          errorMessage: message,
+          localUri: photoUri,
+          status: 'failed',
+        },
+      }));
+
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Upload failed',
+        text2: message,
+        position: 'top',
+        topOffset: 60,
+      });
     }
   };
 
-  const handleRemoveRequired = (field: keyof typeof requiredPhotos) => {
-    setRequiredPhotos(prev => ({ ...prev, [field]: null }));
+  const handleRemoveRequired = (field: RequiredExteriorPhotoKey) => {
+    setRequiredPhotos(prev => ({ ...prev, [field]: createEmptyChecklistPhoto() }));
   };
 
   const handleAddDamagePhoto = async () => {
-    if (damagePhotos.length < 3) {
-      const photoUri = await capturePhoto();
+    if (damagePhotos.length >= 3) {
+      return;
+    }
 
-      if (photoUri) {
-        setDamagePhotos(prev => [...prev, photoUri]);
-      }
+    const photoUri = await capturePhoto();
+
+    if (!photoUri) {
+      return;
+    }
+
+    const nextIndex = damagePhotos.length;
+
+    setDamagePhotos(prev => [
+      ...prev,
+      {
+        localUri: photoUri,
+        status: 'uploading',
+      },
+    ]);
+
+    try {
+      const uploadResult = await uploadChecklistPhoto(
+        photoUri,
+        `exterior-damage-${nextIndex + 1}`,
+      );
+
+      setDamagePhotos(prev => prev.map((photo, index) => (
+        index === nextIndex
+          ? {
+              ...uploadResult,
+              localUri: photoUri,
+              status: 'uploaded',
+            }
+          : photo
+      )));
+    } catch (error) {
+      const message =
+        getApiErrorMessage(error) ?? 'Unable to upload this damage photo.';
+
+      setDamagePhotos(prev => prev.map((photo, index) => (
+        index === nextIndex
+          ? {
+              errorMessage: message,
+              localUri: photoUri,
+              status: 'failed',
+            }
+          : photo
+      )));
+
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Upload failed',
+        text2: message,
+        position: 'top',
+        topOffset: 60,
+      });
     }
   };
 
   const handleRetakeDamagePhoto = async (indexToUpdate: number) => {
+    if (damagePhotos[indexToUpdate]?.status === 'uploading') {
+      return;
+    }
+
     const photoUri = await capturePhoto();
 
-    if (photoUri) {
-      setDamagePhotos(prev => (
-        prev.map((uri, index) => (index === indexToUpdate ? photoUri : uri))
-      ));
+    if (!photoUri) {
+      return;
+    }
+
+    setDamagePhotos(prev => prev.map((photo, index) => (
+      index === indexToUpdate
+        ? {
+            localUri: photoUri,
+            status: 'uploading',
+          }
+        : photo
+    )));
+
+    try {
+      const uploadResult = await uploadChecklistPhoto(
+        photoUri,
+        `exterior-damage-${indexToUpdate + 1}`,
+      );
+
+      setDamagePhotos(prev => prev.map((photo, index) => (
+        index === indexToUpdate
+          ? {
+              ...uploadResult,
+              localUri: photoUri,
+              status: 'uploaded',
+            }
+          : photo
+      )));
+    } catch (error) {
+      const message =
+        getApiErrorMessage(error) ?? 'Unable to upload this damage photo.';
+
+      setDamagePhotos(prev => prev.map((photo, index) => (
+        index === indexToUpdate
+          ? {
+              errorMessage: message,
+              localUri: photoUri,
+              status: 'failed',
+            }
+          : photo
+      )));
+
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Upload failed',
+        text2: message,
+        position: 'top',
+        topOffset: 60,
+      });
     }
   };
 
@@ -69,7 +239,57 @@ export default function ChecklistStep2Screen() {
   };
 
   // Ensure all 4 required photos are present before enabling the "Next" button
-  const isNextEnabled = Boolean(requiredPhotos.right && requiredPhotos.left && requiredPhotos.front && requiredPhotos.back);
+  const requiredPhotoList = Object.values(requiredPhotos);
+  const allRequiredUploaded = requiredPhotoList.every(isChecklistPhotoUploaded);
+  const hasPendingUpload = [...requiredPhotoList, ...damagePhotos].some(
+    photo => photo.status === 'uploading',
+  );
+  const hasFailedUpload = [...requiredPhotoList, ...damagePhotos].some(
+    photo => photo.status === 'failed',
+  );
+  const isNextEnabled =
+    allRequiredUploaded &&
+    !hasPendingUpload &&
+    !hasFailedUpload &&
+    !submitExteriorChecklist.isPending;
+
+  const handleNext = async () => {
+    if (!isNextEnabled) {
+      return;
+    }
+
+    try {
+      await submitExteriorChecklist.mutateAsync({
+        payload: {
+          uploadPhotos: [
+            ...Object.entries(requiredExteriorImageTypes).map(([field, exteriorUploadImage]) => ({
+              ...toChecklistUploadedPhoto(
+                requiredPhotos[field as RequiredExteriorPhotoKey],
+              ),
+              exteriorUploadImage,
+            })),
+            ...damagePhotos
+              .filter(isChecklistPhotoUploaded)
+              .map(photo => ({
+                ...toChecklistUploadedPhoto(photo),
+                exteriorUploadImage: 'DAMAGE' as const,
+              })),
+          ],
+        },
+        tripId: activeTripId,
+      });
+
+      router.push(`/checklist/step3?tripId=${encodeURIComponent(activeTripId)}`);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Exterior checklist failed',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -110,30 +330,30 @@ export default function ChecklistStep2Screen() {
 
           <PhotoUploadCard
             title="Right Side"
-            subtitle="Right Side: Full side including wheels"
-            imageUri={requiredPhotos.right}
-            onPress={() => handleImagePick('right')}
+            subtitle={requiredPhotos.right.status === 'uploading' ? 'Uploading...' : 'Right Side: Full side including wheels'}
+            imageUri={requiredPhotos.right.localUri}
+            onPress={() => uploadRequiredPhoto('right')}
             onRemove={() => handleRemoveRequired('right')}
           />
           <PhotoUploadCard
             title="Left Side"
-            subtitle="Left Side: Full side including wheels"
-            imageUri={requiredPhotos.left}
-            onPress={() => handleImagePick('left')}
+            subtitle={requiredPhotos.left.status === 'uploading' ? 'Uploading...' : 'Left Side: Full side including wheels'}
+            imageUri={requiredPhotos.left.localUri}
+            onPress={() => uploadRequiredPhoto('left')}
             onRemove={() => handleRemoveRequired('left')}
           />
           <PhotoUploadCard
             title="Front"
-            subtitle="Front: Clear view of grille and bumper"
-            imageUri={requiredPhotos.front}
-            onPress={() => handleImagePick('front')}
+            subtitle={requiredPhotos.front.status === 'uploading' ? 'Uploading...' : 'Front: Clear view of grille and bumper'}
+            imageUri={requiredPhotos.front.localUri}
+            onPress={() => uploadRequiredPhoto('front')}
             onRemove={() => handleRemoveRequired('front')}
           />
           <PhotoUploadCard
             title="Back"
-            subtitle="Back: Including taillights, bumper & plate"
-            imageUri={requiredPhotos.back}
-            onPress={() => handleImagePick('back')}
+            subtitle={requiredPhotos.back.status === 'uploading' ? 'Uploading...' : 'Back: Including taillights, bumper & plate'}
+            imageUri={requiredPhotos.back.localUri}
+            onPress={() => uploadRequiredPhoto('back')}
             onRemove={() => handleRemoveRequired('back')}
           />
 
@@ -143,12 +363,12 @@ export default function ChecklistStep2Screen() {
           </Text>
 
           {/* Render uploaded damage photos */}
-          {damagePhotos.map((uri, index) => (
+          {damagePhotos.map((photo, index) => (
             <PhotoUploadCard
               key={`damage-${index}`}
               title="Additional (Optional)"
-              subtitle="Up to 3 damage close-ups"
-              imageUri={uri}
+              subtitle={photo.status === 'uploading' ? 'Uploading...' : 'Up to 3 damage close-ups'}
+              imageUri={photo.localUri}
               onPress={() => handleRetakeDamagePhoto(index)}
               onRemove={() => handleRemoveDamagePhoto(index)}
             />
@@ -166,10 +386,10 @@ export default function ChecklistStep2Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title="Next"
+        title={submitExteriorChecklist.isPending ? 'Saving...' : 'Next'}
         activeOpacity={0.8}
         disabled={!isNextEnabled}
-        onPress={() => router.push(`/checklist/step3?tripId=${encodeURIComponent(activeTripId)}`)}
+        onPress={handleNext}
       />
       </View>
 

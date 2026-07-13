@@ -9,18 +9,28 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useSubmitDriverPhotoChecklist } from '../../src/api/hooks/usePreRideChecklist';
+import {
+  createEmptyChecklistPhoto,
+  isChecklistPhotoUploaded,
+  toChecklistUploadedPhoto,
+} from '../../src/utils/checklistPhotos';
+import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep5Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId ?? '1';
-  const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  const submitDriverPhotoChecklist = useSubmitDriverPhotoChecklist();
+  const [selfie, setSelfie] = useState(createEmptyChecklistPhoto());
 
   const requirements = [
     "Face clearly visible and well-lit",
@@ -30,10 +40,78 @@ export default function ChecklistStep5Screen() {
   ];
 
   const handleOpenCamera = async () => {
+    if (selfie.status === 'uploading') {
+      return;
+    }
+
     const photoUri = await capturePhoto();
 
-    if (photoUri) {
-      setSelfieUri(photoUri);
+    if (!photoUri) {
+      return;
+    }
+
+    setSelfie({
+      localUri: photoUri,
+      status: 'uploading',
+    });
+
+    try {
+      const uploadResult = await uploadChecklistPhoto(
+        photoUri,
+        'driver-selfie',
+      );
+
+      setSelfie({
+        ...uploadResult,
+        localUri: photoUri,
+        status: 'uploaded',
+      });
+    } catch (error) {
+      const message =
+        getApiErrorMessage(error) ?? 'Unable to upload your selfie.';
+
+      setSelfie({
+        errorMessage: message,
+        localUri: photoUri,
+        status: 'failed',
+      });
+
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Upload failed',
+        text2: message,
+        position: 'top',
+        topOffset: 60,
+      });
+    }
+  };
+
+  const isNextEnabled =
+    isChecklistPhotoUploaded(selfie) &&
+    !submitDriverPhotoChecklist.isPending;
+
+  const handleNext = async () => {
+    if (!isNextEnabled) {
+      return;
+    }
+
+    try {
+      await submitDriverPhotoChecklist.mutateAsync({
+        payload: {
+          uploadPhotos: [toChecklistUploadedPhoto(selfie)],
+        },
+        tripId: activeTripId,
+      });
+
+      router.push(`/checklist/step6?tripId=${encodeURIComponent(activeTripId)}`);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Driver photo checklist failed',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
     }
   };
 
@@ -82,10 +160,10 @@ export default function ChecklistStep5Screen() {
           </View>
 
           {/* Dedicated Camera/Selfie Capture Card */}
-          {selfieUri ? (
+          {selfie.localUri ? (
             // Filled State
             <View className="border-2 border-[#0673FF] rounded-2xl overflow-hidden mb-6 items-center justify-center bg-black relative h-[340px]">
-              <ImageBackground source={{ uri: selfieUri }} className="w-full h-full opacity-90" resizeMode="cover">
+              <ImageBackground source={{ uri: selfie.localUri }} className="w-full h-full opacity-90" resizeMode="cover">
                 
                 {/* Visual Face Guide Overlay */}
                 <View className="flex-1 items-center justify-center">
@@ -94,12 +172,20 @@ export default function ChecklistStep5Screen() {
 
                 {/* Retake Button */}
                 <TouchableOpacity 
-                  onPress={() => setSelfieUri(null)}
+                  onPress={() => setSelfie(createEmptyChecklistPhoto())}
                   className="absolute top-4 right-4 bg-black/40 rounded-full p-2"
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Ionicons name="close" size={24} color="white" />
                 </TouchableOpacity>
+
+                {selfie.status === 'uploading' && (
+                  <View className="absolute bottom-4 left-4 right-4 bg-black/50 rounded-xl px-4 py-3">
+                    <Text className="text-white font-inter font-medium text-center text-sm">
+                      Uploading...
+                    </Text>
+                  </View>
+                )}
 
               </ImageBackground>
             </View>
@@ -133,10 +219,10 @@ export default function ChecklistStep5Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title="Next"
+        title={submitDriverPhotoChecklist.isPending ? 'Saving...' : 'Next'}
         activeOpacity={0.8}
-        disabled={!selfieUri}
-        onPress={() => router.push(`/checklist/step6?tripId=${encodeURIComponent(activeTripId)}`)}
+        disabled={!isNextEnabled}
+        onPress={handleNext}
       />
       </View>
 

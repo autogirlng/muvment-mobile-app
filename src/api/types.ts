@@ -14,6 +14,7 @@ export type DriverTripStatus =
 export interface ApiResponse<TData> {
   status: ApiStatus;
   message: string;
+  errorCode?: string;
   data: TData;
   timestamp: string;
 }
@@ -21,6 +22,7 @@ export interface ApiResponse<TData> {
 export interface ApiMessageResponse {
   status: ApiStatus;
   message: string;
+  errorCode?: string;
   timestamp: string;
 }
 
@@ -238,3 +240,121 @@ export type DriverTripsResponse =
   ApiResponse<PaginatedApiResponseData<DriverTrip>>;
 
 export type DriverTripDetailsResponse = ApiResponse<DriverTripDetails>;
+
+export type ExteriorUploadImage =
+  | "FRONT"
+  | "BACK"
+  | "LEFT_SIDE"
+  | "RIGHT_SIDE"
+  | "DAMAGE";
+
+export type InteriorUploadImage =
+  | "DASHBOARD"
+  | "DRIVER_SIDE"
+  | "PASSENGER"
+  | "REAR_SEATS"
+  | "BOOT";
+
+export type VehicleHealthCheckPhoto =
+  | "OIL_LEVEL"
+  | "COOLANT_LEVEL"
+  | "SAFETY_EQUIPMENT";
+
+export interface ChecklistUploadedPhoto {
+  imageURL: string;
+  publicCloudID: string;
+}
+
+export interface ExteriorChecklistUploadedPhoto
+  extends ChecklistUploadedPhoto {
+  exteriorUploadImage: ExteriorUploadImage;
+}
+
+export interface InteriorChecklistUploadedPhoto
+  extends ChecklistUploadedPhoto {
+  interiorUploadImage: InteriorUploadImage;
+}
+
+export interface VehicleHealthChecklistUploadedPhoto
+  extends ChecklistUploadedPhoto {
+  vehicleHealthCheckPhotos: VehicleHealthCheckPhoto;
+}
+
+export interface DriverPhotoChecklistUploadedPhoto
+  extends ChecklistUploadedPhoto {}
+
+export interface SubmitExteriorChecklistPayload {
+  uploadPhotos: ExteriorChecklistUploadedPhoto[];
+}
+
+export interface VehicleMetadata {
+  fuelLevelInPercentage: number;
+  odometerKM: number;
+}
+
+export interface SubmitInteriorChecklistPayload {
+  metadata: VehicleMetadata;
+  uploadPhotos: InteriorChecklistUploadedPhoto[];
+}
+
+export interface SubmitVehicleHealthChecklistPayload {
+  uploadPhotos: VehicleHealthChecklistUploadedPhoto[];
+}
+
+export interface SubmitDriverPhotoChecklistPayload {
+  uploadPhotos: DriverPhotoChecklistUploadedPhoto[];
+}
+
+export interface ChecklistRideImage {
+  id: string;
+  publicId: string;
+  type: string;
+  url: string;
+}
+
+export interface ChecklistStepResponseData {
+  rideImages: ChecklistRideImage[];
+  step: string;
+  tripId: string;
+  type: string;
+  vehicleMetadata?: VehicleMetadata;
+}
+
+export type ChecklistStepResponse =
+  ApiResponse<ChecklistStepResponseData>;
+
+export interface PreRideChecklistSummarySection {
+  photosCaptured: number;
+  photosNotCaptured?: number;
+  photoNotCaptured?: number;
+  valid: boolean;
+}
+
+export interface PreRideInteriorChecklistSummarySection
+  extends PreRideChecklistSummarySection {
+  metadata?: VehicleMetadata;
+}
+
+export interface PreRideChecklistSummary {
+  driverPhoto: PreRideChecklistSummarySection;
+  exteriorPhotos: PreRideChecklistSummarySection;
+  interiorPhotos: PreRideInteriorChecklistSummarySection;
+  totalCompletionTime: string;
+  vehicleHealthCheckPhotos: PreRideChecklistSummarySection;
+  vehicleInfo: {
+    vehicleIdentifier: string;
+    vehicleName: string;
+  };
+}
+
+export type PreRideChecklistSummaryResponse =
+  ApiResponse<PreRideChecklistSummary>;
+
+export interface SubmitPreRideChecklistResponseData {
+  driverId: string;
+  driverTripStatus: DriverTripStatus;
+  tripId: string;
+}
+
+export type SubmitPreRideChecklistResponse =
+  ApiResponse<SubmitPreRideChecklistResponseData>;
