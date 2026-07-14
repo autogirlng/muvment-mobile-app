@@ -95,6 +95,48 @@ const markLoadedNotificationRead = (
   );
 };
 
+export const upsertLoadedNotification = (
+  queryClient: QueryClient,
+  notification: UserNotification,
+) => {
+  queryClient.setQueryData<InfiniteData<UserNotificationsResponse>>(
+    USER_NOTIFICATIONS_QUERY_KEY,
+    (currentData) => {
+      if (!currentData || currentData.pages.length === 0) {
+        return currentData;
+      }
+
+      const alreadyLoaded = currentData.pages.some((page) =>
+        page.data.content.some(
+          (loadedNotification) =>
+            loadedNotification.id === notification.id,
+        ),
+      );
+
+      if (alreadyLoaded) {
+        return currentData;
+      }
+
+      const [firstPage, ...remainingPages] = currentData.pages;
+
+      return {
+        ...currentData,
+        pages: [
+          {
+            ...firstPage,
+            data: {
+              ...firstPage.data,
+              content: [notification, ...firstPage.data.content],
+              totalElements: firstPage.data.totalElements + 1,
+            },
+          },
+          ...remainingPages,
+        ],
+      };
+    },
+  );
+};
+
 const markAllLoadedNotificationsRead = (
   queryClient: QueryClient,
 ) => {

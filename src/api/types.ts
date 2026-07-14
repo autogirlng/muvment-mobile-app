@@ -159,6 +159,7 @@ export interface UserNotification {
   message: string;
   entityId?: string | null;
   entityName?: string | null;
+  actionUrl?: string | null;
   type: NotificationType;
   priority: NotificationPriority;
   isDeleted: boolean;
