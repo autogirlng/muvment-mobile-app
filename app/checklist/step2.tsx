@@ -261,6 +261,7 @@ export default function ChecklistStep2Screen() {
     try {
       await submitExteriorChecklist.mutateAsync({
         payload: {
+          checklistType: 'PRE_TRIP',
           uploadPhotos: [
             ...Object.entries(requiredExteriorImageTypes).map(([field, exteriorUploadImage]) => ({
               ...toChecklistUploadedPhoto(

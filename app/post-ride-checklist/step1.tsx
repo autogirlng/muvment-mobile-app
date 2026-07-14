@@ -10,33 +10,86 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
+import { EmptyState } from '../../src/components/common/EmptyState';
 import { LocationItem } from '../../src/components/common/LocationItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { VehicleCard } from '../../src/components/common/VehicleCard';
-import {
-  FLAT_TRIPS_DATA,
-  MOCK_TRIP_DETAILS_BY_STAGE,
-} from '../../src/data/mockData';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useDriverTrip } from '../../src/api/hooks/useTrips';
 import { openMapForAddress } from '../../src/utils/deviceActions';
+
+const getDisplayValue = (value: string | null | undefined, fallback: string) =>
+  value?.trim() || fallback;
 
 export default function PostRideChecklistStep1Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
-  const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === activeTripId);
-  const trip = MOCK_TRIP_DETAILS_BY_STAGE.ongoing;
+  const activeTripId = tripId?.trim();
+  const driverTripQuery = useDriverTrip(activeTripId);
+  const driverTripDetails = driverTripQuery.data?.data;
+  const dropOffAddress = getDisplayValue(
+    driverTripDetails?.dropOffLocation?.location,
+    'Drop-off location unavailable',
+  );
+  const vehicleName = getDisplayValue(
+    driverTripDetails?.vehicleName,
+    'Vehicle unavailable',
+  );
+  const vehicleIdentifier = getDisplayValue(
+    driverTripDetails?.vehicleIdentifier,
+    'Identifier unavailable',
+  );
+  const vehicleImage = driverTripDetails?.primaryVehicleImage?.trim() || undefined;
 
-  const [vehicleModel, vehiclePlate] = selectedTrip?.vehicle.split('•').map((value) => value.trim()) ?? [
-    trip.vehicle.model,
-    trip.vehicle.plate,
-  ];
+  const renderHeader = () => (
+    <View className="px-4 pt-2 pb-2 z-10">
+      <CustomBack color="#101928" />
+    </View>
+  );
+
+  if (!activeTripId) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        {renderHeader()}
+        <EmptyState
+          title="Trip unavailable"
+          description="Missing trip ID. Please go back and select a trip again."
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (driverTripQuery.isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        {renderHeader()}
+        <EmptyState
+          title="Loading trip details"
+          description="Fetching drop-off and vehicle information."
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (driverTripQuery.isError || !driverTripDetails) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        {renderHeader()}
+        <EmptyState
+          title="Unable to load trip details"
+          description={getApiErrorMessage(driverTripQuery.error) ?? 'Please check your connection and try again.'}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
       <View className="flex-1" style={{ flex: 1 }}>
-      <View className="px-4 pt-2 pb-2 z-10">
-        <CustomBack color="#101928" />
-      </View>
+      {renderHeader()}
 
       <ScrollView
         style={{ flex: 1 }}
@@ -52,8 +105,8 @@ export default function PostRideChecklistStep1Screen() {
 
         <LocationItem
           title="Drop-Off Location"
-          address={trip.locations.dropoff}
-          onMapPress={() => openMapForAddress(trip.locations.dropoff)}
+          address={dropOffAddress}
+          onMapPress={() => openMapForAddress(dropOffAddress)}
         />
 
         <View className="mb-2 mt-2">
@@ -61,7 +114,11 @@ export default function PostRideChecklistStep1Screen() {
             Assigned Vehicle
           </Text>
 
-          <VehicleCard model={vehicleModel} plate={vehiclePlate} />
+          <VehicleCard
+            imageUri={vehicleImage}
+            model={vehicleName}
+            plate={vehicleIdentifier}
+          />
         </View>
       </ScrollView>
 

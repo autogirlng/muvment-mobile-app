@@ -7,12 +7,15 @@ import {
 import { apiFetchClient } from "../client.fetch";
 import type {
   ChecklistStepResponse,
+  DriverTripStatus,
+  PostRideChecklistAggregateResponse,
   PreRideChecklistSummaryResponse,
   SubmitDriverPhotoChecklistPayload,
   SubmitExteriorChecklistPayload,
   SubmitInteriorChecklistPayload,
   SubmitPreRideChecklistResponse,
   SubmitVehicleHealthChecklistPayload,
+  TransitionDriverTripStatusResponse,
 } from "../types";
 
 export const DRIVER_APP_CHECKLISTS_PATH = "/driver-app/checklists";
@@ -21,13 +24,45 @@ export const PRE_RIDE_CHECKLIST_SUMMARY_QUERY_KEY = [
   "pre-ride-checklist-summary",
 ] as const;
 
+export const POST_RIDE_CHECKLIST_AGGREGATE_QUERY_KEY = [
+  "post-ride-checklist-aggregate",
+] as const;
+
 const buildChecklistPath = (tripId: string, step: string) =>
   `${DRIVER_APP_CHECKLISTS_PATH}/${encodeURIComponent(tripId)}/${step}`;
+
+const buildTransitionPath = (
+  tripId: string,
+  driverTripStatus: DriverTripStatus,
+) => {
+  const params = new URLSearchParams();
+
+  params.set("driverTripStatus", driverTripStatus);
+
+  return `${buildChecklistPath(tripId, "transition")}?${params.toString()}`;
+};
 
 const getPreRideChecklistSummaryQueryKey = (tripId?: string) => [
   ...PRE_RIDE_CHECKLIST_SUMMARY_QUERY_KEY,
   tripId,
 ];
+
+const getPostRideChecklistAggregateQueryKey = (tripId?: string) => [
+  ...POST_RIDE_CHECKLIST_AGGREGATE_QUERY_KEY,
+  tripId,
+];
+
+const invalidateChecklistQueries = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  tripId: string,
+) => {
+  void queryClient.invalidateQueries({
+    queryKey: getPreRideChecklistSummaryQueryKey(tripId),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: getPostRideChecklistAggregateQueryKey(tripId),
+  });
+};
 
 export const usePreRideChecklistSummary = (tripId?: string) =>
   useQuery<PreRideChecklistSummaryResponse, Error>({
@@ -40,6 +75,25 @@ export const usePreRideChecklistSummary = (tripId?: string) =>
       const response =
         await apiFetchClient.get<PreRideChecklistSummaryResponse>(
           buildChecklistPath(tripId, "summary"),
+        );
+
+      return response.data;
+    },
+    enabled: Boolean(tripId),
+    staleTime: 15_000,
+  });
+
+export const usePostRideChecklistAggregate = (tripId?: string) =>
+  useQuery<PostRideChecklistAggregateResponse, Error>({
+    queryKey: getPostRideChecklistAggregateQueryKey(tripId),
+    queryFn: async () => {
+      if (!tripId) {
+        throw new Error("Missing trip ID.");
+      }
+
+      const response =
+        await apiFetchClient.get<PostRideChecklistAggregateResponse>(
+          buildChecklistPath(tripId, "aggregate"),
         );
 
       return response.data;
@@ -65,9 +119,7 @@ export const useSubmitExteriorChecklist = () => {
       return response.data;
     },
     onSuccess: (_response, { tripId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: getPreRideChecklistSummaryQueryKey(tripId),
-      });
+      invalidateChecklistQueries(queryClient, tripId);
     },
   });
 };
@@ -89,9 +141,7 @@ export const useSubmitInteriorChecklist = () => {
       return response.data;
     },
     onSuccess: (_response, { tripId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: getPreRideChecklistSummaryQueryKey(tripId),
-      });
+      invalidateChecklistQueries(queryClient, tripId);
     },
   });
 };
@@ -113,9 +163,7 @@ export const useSubmitVehicleHealthChecklist = () => {
       return response.data;
     },
     onSuccess: (_response, { tripId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: getPreRideChecklistSummaryQueryKey(tripId),
-      });
+      invalidateChecklistQueries(queryClient, tripId);
     },
   });
 };
@@ -137,9 +185,7 @@ export const useSubmitDriverPhotoChecklist = () => {
       return response.data;
     },
     onSuccess: (_response, { tripId }) => {
-      void queryClient.invalidateQueries({
-        queryKey: getPreRideChecklistSummaryQueryKey(tripId),
-      });
+      invalidateChecklistQueries(queryClient, tripId);
     },
   });
 };
@@ -161,9 +207,35 @@ export const useSubmitPreRideChecklist = () => {
       return response.data;
     },
     onSuccess: (_response, { tripId }) => {
+      invalidateChecklistQueries(queryClient, tripId);
       void queryClient.invalidateQueries({
-        queryKey: getPreRideChecklistSummaryQueryKey(tripId),
+        queryKey: ["driver-trip", tripId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["driver-trips"],
+      });
+    },
+  });
+};
+
+export const useTransitionDriverTripStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    TransitionDriverTripStatusResponse,
+    Error,
+    { driverTripStatus: DriverTripStatus; tripId: string }
+  >({
+    mutationFn: async ({ driverTripStatus, tripId }) => {
+      const response =
+        await apiFetchClient.put<TransitionDriverTripStatusResponse>(
+          buildTransitionPath(tripId, driverTripStatus),
+        );
+
+      return response.data;
+    },
+    onSuccess: (_response, { tripId }) => {
+      invalidateChecklistQueries(queryClient, tripId);
       void queryClient.invalidateQueries({
         queryKey: ["driver-trip", tripId],
       });

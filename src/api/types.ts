@@ -187,6 +187,7 @@ export interface DriverTrip {
   endDateTime?: string | null;
   vehicleIdentifier?: string | null;
   vehicleName?: string | null;
+  primaryVehicleImage?: string | null;
   driverName?: string | null;
   driverPhoneNumber?: string | null;
   tripDuration?: number | null;
@@ -214,6 +215,7 @@ export interface DriverTripDetails {
   endDateTime?: string | null;
   vehicleIdentifier?: string | null;
   vehicleName?: string | null;
+  primaryVehicleImage?: string | null;
   driverName?: string | null;
   driverPhoneNumber?: string | null;
   tripDuration?: number | null;
@@ -260,6 +262,8 @@ export type VehicleHealthCheckPhoto =
   | "COOLANT_LEVEL"
   | "SAFETY_EQUIPMENT";
 
+export type ChecklistType = "PRE_TRIP" | "POST_TRIP";
+
 export interface ChecklistUploadedPhoto {
   imageURL: string;
   publicCloudID: string;
@@ -284,6 +288,7 @@ export interface DriverPhotoChecklistUploadedPhoto
   extends ChecklistUploadedPhoto {}
 
 export interface SubmitExteriorChecklistPayload {
+  checklistType: ChecklistType;
   uploadPhotos: ExteriorChecklistUploadedPhoto[];
 }
 
@@ -293,6 +298,7 @@ export interface VehicleMetadata {
 }
 
 export interface SubmitInteriorChecklistPayload {
+  checklistType: ChecklistType;
   metadata: VehicleMetadata;
   uploadPhotos: InteriorChecklistUploadedPhoto[];
 }
@@ -337,6 +343,7 @@ export interface PreRideInteriorChecklistSummarySection
 
 export interface PreRideChecklistSummary {
   driverPhoto: PreRideChecklistSummarySection;
+  driverTripStatus?: DriverTripStatus;
   exteriorPhotos: PreRideChecklistSummarySection;
   interiorPhotos: PreRideInteriorChecklistSummarySection;
   totalCompletionTime: string;
@@ -350,6 +357,22 @@ export interface PreRideChecklistSummary {
 export type PreRideChecklistSummaryResponse =
   ApiResponse<PreRideChecklistSummary>;
 
+export interface PostRideChecklistSummary {
+  dropOffLocation: string;
+  exteriorPhotos: PreRideChecklistSummarySection;
+  interiorPhotos: PreRideInteriorChecklistSummarySection;
+  totalCompletionTime: string;
+  vehicleMetadata?: VehicleMetadata;
+}
+
+export interface PostRideChecklistAggregate {
+  postTripSummary: PostRideChecklistSummary;
+  preTripSummary: PreRideChecklistSummary;
+}
+
+export type PostRideChecklistAggregateResponse =
+  ApiResponse<PostRideChecklistAggregate>;
+
 export interface SubmitPreRideChecklistResponseData {
   driverId: string;
   driverTripStatus: DriverTripStatus;
@@ -358,3 +381,13 @@ export interface SubmitPreRideChecklistResponseData {
 
 export type SubmitPreRideChecklistResponse =
   ApiResponse<SubmitPreRideChecklistResponseData>;
+
+export interface TransitionDriverTripStatusResponseData {
+  driverId: string;
+  driverTripStatus: DriverTripStatus;
+  prevTripStatus: DriverTripStatus;
+  tripId: string;
+}
+
+export type TransitionDriverTripStatusResponse =
+  ApiResponse<TransitionDriverTripStatusResponseData>;

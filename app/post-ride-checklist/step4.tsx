@@ -6,6 +6,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import Toast from 'react-native-toast-message';
 
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
@@ -14,16 +15,75 @@ import { CustomBack } from '../../src/components/common/CustomBack';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { SummaryCard } from '../../src/components/common/SummaryCard';
-import { MOCK_POST_RIDE_CHECKLIST } from '../../src/data/mockData';
+import { getApiErrorMessage } from '../../src/api/errors';
+import {
+  usePostRideChecklistAggregate,
+  useTransitionDriverTripStatus,
+} from '../../src/api/hooks/usePreRideChecklist';
+import type { PreRideChecklistSummarySection } from '../../src/api/types';
+
+const getPhotosNotCaptured = (section: PreRideChecklistSummarySection) =>
+  section.photosNotCaptured ?? section.photoNotCaptured ?? 0;
+
+const getPhotoSummaryLabel = (
+  section: PreRideChecklistSummarySection,
+  label: string,
+) => {
+  const missing = getPhotosNotCaptured(section);
+  const status = section.valid ? 'complete' : 'incomplete';
+
+  return `${section.photosCaptured} ${label} captured${
+    missing > 0 ? `, ${missing} missing` : ''
+  } | ${status}`;
+};
 
 export default function PostRideChecklistStep4Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId ?? '1';
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const aggregateQuery = usePostRideChecklistAggregate(activeTripId);
+  const transitionDriverTripStatus = useTransitionDriverTripStatus();
+  const aggregate = aggregateQuery.data?.data;
+  const preTripSummary = aggregate?.preTripSummary;
+  const postTripSummary = aggregate?.postTripSummary;
+  const aggregateTimestamp = aggregateQuery.data?.timestamp;
+  const postRideChecklistIsValid = Boolean(
+    postTripSummary?.exteriorPhotos.valid &&
+      postTripSummary.interiorPhotos.valid,
+  );
+  const canSubmit =
+    postRideChecklistIsValid &&
+    !aggregateQuery.isLoading &&
+    !aggregateQuery.isError &&
+    !transitionDriverTripStatus.isPending;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsConfirmVisible(false);
-    router.replace(`/post-ride-checklist/success?tripId=${encodeURIComponent(activeTripId)}`);
+
+    try {
+      await transitionDriverTripStatus.mutateAsync({
+        driverTripStatus: 'COMPLETE',
+        tripId: activeTripId,
+      });
+
+      Toast.show({
+        type: 'successToast',
+        text1: 'Post-ride checklist submitted',
+        text2: 'The ride has been marked complete.',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      router.replace(`/post-ride-checklist/success?tripId=${encodeURIComponent(activeTripId)}`);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Post-ride submission failed',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
   };
 
   return (
@@ -55,39 +115,98 @@ export default function PostRideChecklistStep4Screen() {
         </View>
 
         <View className="px-5">
-          <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mb-4">
-            Checklist Summary - Before
-          </Text>
+          {aggregateQuery.isLoading && (
+            <Text className="font-inter text-[#667185] text-[14px] mb-4">
+              Loading checklist summary...
+            </Text>
+          )}
 
-          {MOCK_POST_RIDE_CHECKLIST.summaryBefore.map((item) => (
-            <SummaryCard key={item.title} title={item.title} subtitle={item.subtitle} />
-          ))}
+          {aggregateQuery.isError && (
+            <Text className="font-inter text-[#E32636] text-[14px] mb-4">
+              {getApiErrorMessage(aggregateQuery.error) ?? 'Unable to load checklist summary.'}
+            </Text>
+          )}
+
+          {preTripSummary && (
+            <>
+              <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mb-4">
+                Checklist Summary - Before
+              </Text>
+
+              <SummaryCard
+                title="Vehicle Info"
+                subtitle={`${preTripSummary.vehicleInfo.vehicleName} - ${preTripSummary.vehicleInfo.vehicleIdentifier}`}
+              />
+              <SummaryCard
+                title="Exterior Photos"
+                subtitle={getPhotoSummaryLabel(preTripSummary.exteriorPhotos, 'photos')}
+              />
+              <SummaryCard
+                title="Interior Photos"
+                subtitle={`${getPhotoSummaryLabel(preTripSummary.interiorPhotos, 'photos')}, odometer: ${preTripSummary.interiorPhotos.metadata?.odometerKM ?? 0} km | FL:${preTripSummary.interiorPhotos.metadata?.fuelLevelInPercentage ?? 0}%`}
+              />
+              <SummaryCard
+                title="Health Check"
+                subtitle={getPhotoSummaryLabel(preTripSummary.vehicleHealthCheckPhotos, 'photos')}
+              />
+              <SummaryCard
+                title="Driver Photo"
+                subtitle={getPhotoSummaryLabel(preTripSummary.driverPhoto, 'photo')}
+              />
+            </>
+          )}
 
           <View className="h-[1px] bg-[#98A2B3] w-full my-6" />
 
-          <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mb-4">
-            Checklist Summary - After
-          </Text>
+          {postTripSummary && (
+            <>
+              <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mb-4">
+                Checklist Summary - After
+              </Text>
 
-          {MOCK_POST_RIDE_CHECKLIST.summaryAfter.map((item) => (
-            <SummaryCard key={item.title} title={item.title} subtitle={item.subtitle} />
-          ))}
+              <SummaryCard
+                title="Drop-off Location"
+                subtitle={postTripSummary.dropOffLocation || 'Drop-off location unavailable'}
+              />
+              <SummaryCard
+                title="Exterior Photos"
+                subtitle={getPhotoSummaryLabel(postTripSummary.exteriorPhotos, 'photos')}
+              />
+              <SummaryCard
+                title="Interior Photos"
+                subtitle={`${getPhotoSummaryLabel(postTripSummary.interiorPhotos, 'photos')}, odometer: ${postTripSummary.interiorPhotos.metadata?.odometerKM ?? postTripSummary.vehicleMetadata?.odometerKM ?? 0} km | FL:${postTripSummary.interiorPhotos.metadata?.fuelLevelInPercentage ?? postTripSummary.vehicleMetadata?.fuelLevelInPercentage ?? 0}%`}
+              />
+            </>
+          )}
 
           <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mt-2 mb-4">
             Submission Details:
           </Text>
 
-          {MOCK_POST_RIDE_CHECKLIST.submissionDetails.map((detail, index) => (
-            <NumberedListItem key={detail} index={index + 1} text={detail} size="small" />
-          ))}
+          <NumberedListItem
+            index={1}
+            text={`Timestamp: ${aggregateTimestamp ? new Date(aggregateTimestamp).toLocaleString() : 'Unavailable'}`}
+            size="small"
+          />
+          <NumberedListItem
+            index={2}
+            text={`Total Completion: ${postTripSummary?.totalCompletionTime ?? 'Unavailable'}`}
+            size="small"
+          />
+          <NumberedListItem
+            index={3}
+            text={`Checklist Status: ${postRideChecklistIsValid ? 'Ready to submit' : 'Incomplete'}`}
+            size="small"
+          />
 
           <View className="h-[1px] bg-[#E4E7EC] w-full mt-4" />
         </View>
       </ScrollView>
 
       <ChecklistFooter
-        title="Submit Checklist"
+        title={transitionDriverTripStatus.isPending ? 'Submitting...' : 'Submit Checklist'}
         activeOpacity={0.8}
+        disabled={!canSubmit}
         onPress={() => setIsConfirmVisible(true)}
       />
       </View>
@@ -95,7 +214,9 @@ export default function PostRideChecklistStep4Screen() {
       <ConfirmationModal
         visible={isConfirmVisible}
         onClose={() => setIsConfirmVisible(false)}
-        onConfirm={handleSubmit}
+        onConfirm={() => {
+          void handleSubmit();
+        }}
         title="Submit Report"
         message="Are you sure you want to Submit Report? This action cannot be undone."
         confirmText="Submit"

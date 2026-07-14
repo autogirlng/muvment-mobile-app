@@ -42,6 +42,7 @@ export default function ChecklistStep1Screen() {
     driverTripDetails?.vehicleIdentifier,
     'Identifier unavailable',
   );
+  const vehicleImage = driverTripDetails?.primaryVehicleImage?.trim() || undefined;
 
   const renderHeader = () => (
     <View className="px-4 pt-2 pb-2 z-10">
@@ -129,7 +130,11 @@ export default function ChecklistStep1Screen() {
             Assigned Vehicle
           </Text>
 
-          <VehicleCard model={vehicleName} plate={vehicleIdentifier} />
+          <VehicleCard
+            imageUri={vehicleImage}
+            model={vehicleName}
+            plate={vehicleIdentifier}
+          />
         </View>
 
       </ScrollView>

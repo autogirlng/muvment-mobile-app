@@ -175,6 +175,7 @@ export default function ChecklistStep3Screen() {
     try {
       await submitInteriorChecklist.mutateAsync({
         payload: {
+          checklistType: 'PRE_TRIP',
           metadata: {
             fuelLevelInPercentage,
             odometerKM,

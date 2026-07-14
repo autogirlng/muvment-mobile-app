@@ -15,23 +15,50 @@ import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
+import { getApiErrorMessage } from '../../src/api/errors';
+import { useSubmitInteriorChecklist } from '../../src/api/hooks/usePreRideChecklist';
+import type { InteriorUploadImage } from '../../src/api/types';
 import { MOCK_POST_RIDE_CHECKLIST } from '../../src/data/mockData';
+import {
+  createEmptyChecklistPhoto,
+  isChecklistPhotoUploaded,
+  toChecklistUploadedPhoto,
+} from '../../src/utils/checklistPhotos';
+import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
-type RequiredInteriorPhotoId = 'dashboard' | 'driverSide' | 'passengerSide' | 'rearSeats' | 'boot';
+type RequiredInteriorPhotoId =
+  | 'boot'
+  | 'dashboard'
+  | 'driverSide'
+  | 'passengerSide'
+  | 'rearSeats';
 
-const initialInteriorPhotos: Record<RequiredInteriorPhotoId, string | null> = {
-  dashboard: null,
-  driverSide: null,
-  passengerSide: null,
-  rearSeats: null,
-  boot: null,
+const interiorImageTypes: Record<RequiredInteriorPhotoId, InteriorUploadImage> = {
+  boot: 'BOOT',
+  dashboard: 'DASHBOARD',
+  driverSide: 'DRIVER_SIDE',
+  passengerSide: 'PASSENGER',
+  rearSeats: 'REAR_SEATS',
+};
+
+const parseNumericInput = (value: string) => {
+  const parsedValue = Number(value.replace(/[,%\s]/g, ''));
+
+  return Number.isFinite(parsedValue) ? parsedValue : undefined;
 };
 
 export default function PostRideChecklistStep3Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId ?? '1';
-  const [photos, setPhotos] = useState(initialInteriorPhotos);
+  const submitInteriorChecklist = useSubmitInteriorChecklist();
+  const [photos, setPhotos] = useState({
+    boot: createEmptyChecklistPhoto(),
+    dashboard: createEmptyChecklistPhoto(),
+    driverSide: createEmptyChecklistPhoto(),
+    passengerSide: createEmptyChecklistPhoto(),
+    rearSeats: createEmptyChecklistPhoto(),
+  });
   const [odometer, setOdometer] = useState('');
   const [fuelLevel, setFuelLevel] = useState('');
   const photoRequirements = MOCK_POST_RIDE_CHECKLIST.interiorPhotos.required;
@@ -39,42 +66,81 @@ export default function PostRideChecklistStep3Screen() {
   const extractedValues = MOCK_POST_RIDE_CHECKLIST.interiorPhotos.extractedValues;
 
   const handleDashboardPick = async () => {
+    await handleImagePick('dashboard');
+  };
+
+  const handleImagePick = async (field: RequiredInteriorPhotoId) => {
+    if (photos[field].status === 'uploading') {
+      return;
+    }
+
     const photoUri = await capturePhoto();
 
     if (!photoUri) return;
 
+    const uploadType = interiorImageTypes[field];
+
     setPhotos((currentPhotos) => ({
       ...currentPhotos,
-      dashboard: photoUri,
+      [field]: {
+        localUri: photoUri,
+        status: 'uploading',
+      },
     }));
 
-    setTimeout(() => {
+    try {
+      const uploadResult = await uploadChecklistPhoto(
+        photoUri,
+        `post-interior-${uploadType}`,
+      );
+
+      setPhotos((currentPhotos) => ({
+        ...currentPhotos,
+        [field]: {
+          ...uploadResult,
+          localUri: photoUri,
+          status: 'uploaded',
+        },
+      }));
+    } catch (error) {
+      const message =
+        getApiErrorMessage(error) ?? 'Unable to upload this photo.';
+
+      setPhotos((currentPhotos) => ({
+        ...currentPhotos,
+        [field]: {
+          errorMessage: message,
+          localUri: photoUri,
+          status: 'failed',
+        },
+      }));
+
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Upload failed',
+        text2: message,
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    if (field === 'dashboard') {
       setOdometer(extractedValues.odometer);
-      setFuelLevel(extractedValues.fuelLevel);
+      setFuelLevel(extractedValues.fuelLevel.replace('%', ''));
       Toast.show({
         type: 'successToast',
         text1: 'Data Extracted',
         text2: 'Odometer and fuel levels captured successfully.',
         position: 'top',
       });
-    }, 800);
-  };
-
-  const handleImagePick = async (field: RequiredInteriorPhotoId) => {
-    const photoUri = await capturePhoto();
-
-    if (photoUri) {
-      setPhotos((currentPhotos) => ({
-        ...currentPhotos,
-        [field]: photoUri,
-      }));
     }
   };
 
   const handleRemovePhoto = (field: RequiredInteriorPhotoId) => {
     setPhotos((currentPhotos) => ({
       ...currentPhotos,
-      [field]: null,
+      [field]: createEmptyChecklistPhoto(),
     }));
 
     if (field === 'dashboard') {
@@ -83,10 +149,56 @@ export default function PostRideChecklistStep3Screen() {
     }
   };
 
+  const photoList = Object.values(photos);
+  const odometerKM = parseNumericInput(odometer);
+  const fuelLevelInPercentage = parseNumericInput(fuelLevel);
+  const hasValidMetadata =
+    odometerKM !== undefined &&
+    odometerKM >= 0 &&
+    fuelLevelInPercentage !== undefined &&
+    fuelLevelInPercentage >= 0 &&
+    fuelLevelInPercentage <= 100;
+  const hasPendingUpload = photoList.some((photo) => photo.status === 'uploading');
+  const hasFailedUpload = photoList.some((photo) => photo.status === 'failed');
   const isNextEnabled =
-    photoRequirements.every((photo) => Boolean(photos[photo.id as RequiredInteriorPhotoId])) &&
-    odometer.trim().length > 0 &&
-    fuelLevel.trim().length > 0;
+    photoList.every(isChecklistPhotoUploaded) &&
+    hasValidMetadata &&
+    !hasPendingUpload &&
+    !hasFailedUpload &&
+    !submitInteriorChecklist.isPending;
+
+  const handleNext = async () => {
+    if (!isNextEnabled || odometerKM === undefined || fuelLevelInPercentage === undefined) {
+      return;
+    }
+
+    try {
+      await submitInteriorChecklist.mutateAsync({
+        payload: {
+          checklistType: 'POST_TRIP',
+          metadata: {
+            fuelLevelInPercentage,
+            odometerKM,
+          },
+          uploadPhotos: Object.entries(interiorImageTypes).map(([field, interiorUploadImage]) => ({
+            ...toChecklistUploadedPhoto(photos[field as RequiredInteriorPhotoId]),
+            interiorUploadImage,
+          })),
+        },
+        tripId: activeTripId,
+      });
+
+      router.push(`/post-ride-checklist/step4?tripId=${encodeURIComponent(activeTripId)}`);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Interior checklist failed',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -123,8 +235,8 @@ export default function PostRideChecklistStep3Screen() {
 
           <PhotoUploadCard
             title={dashboardRequirement.title}
-            subtitle={dashboardRequirement.subtitle}
-            imageUri={photos.dashboard}
+            subtitle={photos.dashboard.status === 'uploading' ? 'Uploading...' : dashboardRequirement.subtitle}
+            imageUri={photos.dashboard.localUri}
             onPress={handleDashboardPick}
             onRemove={() => handleRemovePhoto('dashboard')}
           />
@@ -171,13 +283,14 @@ export default function PostRideChecklistStep3Screen() {
 
           {interiorRequirements.map((photo) => {
             const photoId = photo.id as RequiredInteriorPhotoId;
+            const photoState = photos[photoId];
 
             return (
               <PhotoUploadCard
                 key={photo.id}
                 title={photo.title}
-                subtitle={photo.subtitle}
-                imageUri={photos[photoId]}
+                subtitle={photoState.status === 'uploading' ? 'Uploading...' : photo.subtitle}
+                imageUri={photoState.localUri}
                 onPress={() => handleImagePick(photoId)}
                 onRemove={() => handleRemovePhoto(photoId)}
               />
@@ -187,10 +300,10 @@ export default function PostRideChecklistStep3Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title="Next"
+        title={submitInteriorChecklist.isPending ? 'Saving...' : 'Next'}
         activeOpacity={0.8}
         disabled={!isNextEnabled}
-        onPress={() => router.push(`/post-ride-checklist/step4?tripId=${encodeURIComponent(activeTripId)}`)}
+        onPress={handleNext}
       />
       </View>
     </SafeAreaView>

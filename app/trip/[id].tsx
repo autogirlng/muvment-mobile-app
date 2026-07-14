@@ -9,6 +9,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
+import Toast from 'react-native-toast-message';
 
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { TimelineTracker } from '../../src/components/common/TimelineTracker';
@@ -23,6 +24,7 @@ import {
 } from '../../src/data/mockData';
 import type { TripStageKey } from '../../src/data/mockData';
 import { getApiErrorMessage } from '../../src/api/errors';
+import { useTransitionDriverTripStatus } from '../../src/api/hooks/usePreRideChecklist';
 import { useDriverTrip } from '../../src/api/hooks/useTrips';
 import type {
   DriverTripDetails,
@@ -289,6 +291,7 @@ export default function TripDetailScreen() {
   }>();
   const tripId = getStringParam(id);
   const driverTripQuery = useDriverTrip(tripId);
+  const transitionDriverTripStatus = useTransitionDriverTripStatus();
   const driverTripDetails = driverTripQuery.data?.data;
   const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === tripId);
   const selectedStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
@@ -359,6 +362,30 @@ export default function TripDetailScreen() {
   const [isPickupTooltipVisible, setIsPickupTooltipVisible] = useState(false);
   const [isEndRideConfirmVisible, setIsEndRideConfirmVisible] = useState(false);
   const tripDetailsErrorMessage = getApiErrorMessage(driverTripQuery.error);
+  const handleStatusTransition = async ({
+    nextStage,
+    nextStatus,
+  }: {
+    nextStage: string;
+    nextStatus: 'AWAITING_PICKUP' | 'ONGOING';
+  }) => {
+    try {
+      await transitionDriverTripStatus.mutateAsync({
+        driverTripStatus: nextStatus,
+        tripId: routeTripId,
+      });
+
+      router.push(`/trip/${encodeURIComponent(routeTripId)}?stage=${nextStage}`);
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Status update failed',
+        text2: getApiErrorMessage(error) ?? 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
+  };
 
   const SectionDivider = () => <View className="h-[1px] bg-[#E4E7EC] w-full my-3" />;
 
@@ -387,27 +414,42 @@ export default function TripDetailScreen() {
     switch (trip.status) {
       case 'CHECKED IN':
         return {
-          title: 'Proceed to Pickup',
-          disabled: false,
+          title: transitionDriverTripStatus.isPending ? 'Updating...' : 'Proceed to Pickup',
+          disabled: transitionDriverTripStatus.isPending,
           showPickupTooltip: false,
           destructive: false,
-          onPress: () => router.push(`/trip/${encodeURIComponent(routeTripId)}?stage=awaiting-pickup`),
+          onPress: () => {
+            void handleStatusTransition({
+              nextStage: 'awaiting-pickup',
+              nextStatus: 'AWAITING_PICKUP',
+            });
+          },
         };
       case 'AWAITING PICKUP':
         return {
-          title: 'Start Ride',
-          disabled: !isPickupTimeReached,
+          title: transitionDriverTripStatus.isPending ? 'Updating...' : 'Start Ride',
+          disabled: !isPickupTimeReached || transitionDriverTripStatus.isPending,
           showPickupTooltip: !isPickupTimeReached,
           destructive: false,
-          onPress: () => console.log('Start ride'),
+          onPress: () => {
+            void handleStatusTransition({
+              nextStage: 'ongoing',
+              nextStatus: 'ONGOING',
+            });
+          },
         };
       case 'RUNNING LATE':
         return {
-          title: 'Start Ride',
-          disabled: false,
+          title: transitionDriverTripStatus.isPending ? 'Updating...' : 'Start Ride',
+          disabled: transitionDriverTripStatus.isPending,
           showPickupTooltip: false,
           destructive: false,
-          onPress: () => console.log('Start ride'),
+          onPress: () => {
+            void handleStatusTransition({
+              nextStage: 'ongoing',
+              nextStatus: 'ONGOING',
+            });
+          },
         };
       case 'ONGOING':
         return {
