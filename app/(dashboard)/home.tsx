@@ -10,7 +10,10 @@ import { TripCard } from '../../src/components/common/TripCard';
 import { EmptyState } from '../../src/components/common/EmptyState';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { getApiErrorMessage } from '../../src/api/errors';
-import { useDriverTrips } from '../../src/api/hooks/useTrips';
+import {
+  useDriverTripStatistics,
+  useDriverTrips,
+} from '../../src/api/hooks/useTrips';
 import { useCurrentUser } from '../../src/api/hooks/useUsers';
 import { toDriverTripCardModel } from '../../src/utils/driverTrips';
 import {
@@ -21,6 +24,7 @@ import {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const currentUserQuery = useCurrentUser();
+  const driverTripStatisticsQuery = useDriverTripStatistics();
   const driverTripsQuery = useDriverTrips({
     page: 0,
     size: 3,
@@ -38,7 +42,18 @@ export default function HomeScreen() {
 
   const recentTrips = (driverTripsQuery.data?.data.content ?? [])
     .map((trip) => toDriverTripCardModel(trip));
-  const assignedTripsCount = driverTripsQuery.data?.data.totalItems ?? 0;
+  const tripStatistics = driverTripStatisticsQuery.data?.data;
+  const getStatisticValue = (value?: number) => {
+    if (driverTripStatisticsQuery.isLoading) {
+      return '...';
+    }
+
+    if (driverTripStatisticsQuery.isError) {
+      return '--';
+    }
+
+    return String(value ?? 0);
+  };
   const tripsErrorMessage = getApiErrorMessage(driverTripsQuery.error);
   const currentUser = currentUserQuery.data?.data;
   const driverName = currentUserQuery.isLoading
@@ -101,15 +116,15 @@ export default function HomeScreen() {
         <View className="px-6 -mt-14 flex-row gap-x-3 mb-6">
           <StatCard 
             title="Assigned Trips" 
-            value={driverTripsQuery.isLoading ? '...' : assignedTripsCount.toString()}
+            value={getStatisticValue(tripStatistics?.assignedTrips)}
             bgColorClass="bg-white"
             icon={<Ionicons name="car-outline" size={20} color="#475367" />}
           />
           <StatCard 
-            title="Pending Requests" 
-            value="2" 
+            title="Upcoming Trips"
+            value={getStatisticValue(tripStatistics?.upcomingTrips)}
             bgColorClass="bg-[#FFEDC6]"
-            icon={<Ionicons name="card-outline" size={20} color="#475367" />}
+            icon={<Ionicons name="calendar-outline" size={20} color="#475367" />}
           />
         </View>
 

@@ -116,6 +116,18 @@ const matchesActiveTab = (trip: DriverTrip, activeTab: TripFilter) => {
   return !tripStatus || tripStatus === expectedStatus;
 };
 
+const getCountedTabLabel = (
+  label: TripFilter,
+  count: number | undefined,
+  isLoading: boolean,
+) => {
+  if (isLoading && count === undefined) {
+    return label;
+  }
+
+  return `${label} (${count ?? 0})`;
+};
+
 export default function TripsScreen() {
   const insets = useSafeAreaInsets();
   const listBottomPadding = DASHBOARD_TAB_BAR_HEIGHT + Math.max(insets.bottom, 16) + 24;
@@ -137,29 +149,50 @@ export default function TripsScreen() {
     tripStatus: selectedTripStatus,
     ...dateRangeParams,
   });
-  const upcomingTripsCountQuery = useDriverTrips({
-    page: 0,
-    size: 1,
-    tripStatus: 'NOT_STARTED',
-  });
   const driverTrips = driverTripsQuery.data?.data.content ?? [];
-
-  const upcomingCount = useMemo(
-    () => upcomingTripsCountQuery.data?.data.totalItems ?? 0,
-    [upcomingTripsCountQuery.data?.data.totalItems],
-  );
+  const tripStatistics = driverTripsQuery.data?.data.statistics;
 
   const filterTabs: { label: string; value: TripFilter }[] = [
-    { label: 'All', value: 'All' },
     {
-      label: upcomingTripsCountQuery.isLoading
-        ? 'Upcoming'
-        : `Upcoming (${upcomingCount})`,
+      label: getCountedTabLabel(
+        'All',
+        tripStatistics?.assignedTrips,
+        driverTripsQuery.isLoading,
+      ),
+      value: 'All',
+    },
+    {
+      label: getCountedTabLabel(
+        'Upcoming',
+        tripStatistics?.upcomingTrips,
+        driverTripsQuery.isLoading,
+      ),
       value: 'Upcoming',
     },
-    { label: 'Ongoing', value: 'Ongoing' },
-    { label: 'Completed', value: 'Completed' },
-    { label: 'Cancelled', value: 'Cancelled' },
+    {
+      label: getCountedTabLabel(
+        'Ongoing',
+        tripStatistics?.onGoingTrips,
+        driverTripsQuery.isLoading,
+      ),
+      value: 'Ongoing',
+    },
+    {
+      label: getCountedTabLabel(
+        'Completed',
+        tripStatistics?.completedTrips,
+        driverTripsQuery.isLoading,
+      ),
+      value: 'Completed',
+    },
+    {
+      label: getCountedTabLabel(
+        'Cancelled',
+        tripStatistics?.cancelledTrips,
+        driverTripsQuery.isLoading,
+      ),
+      value: 'Cancelled',
+    },
   ];
 
   const dropdownOptions = [

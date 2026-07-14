@@ -202,6 +202,14 @@ export interface DriverTrip {
   status?: DriverTripStatus | null;
 }
 
+export interface DriverTripStatistics {
+  assignedTrips: number;
+  cancelledTrips: number;
+  completedTrips: number;
+  onGoingTrips: number;
+  upcomingTrips: number;
+}
+
 export interface DriverTripLocation {
   lat?: number | null;
   lng?: number | null;
@@ -238,10 +246,17 @@ export interface DriverTripsQueryParams {
   endDate?: string;
 }
 
+export interface DriverTripsPage extends PaginatedApiResponseData<DriverTrip> {
+  statistics?: DriverTripStatistics;
+}
+
 export type DriverTripsResponse =
-  ApiResponse<PaginatedApiResponseData<DriverTrip>>;
+  ApiResponse<DriverTripsPage>;
 
 export type DriverTripDetailsResponse = ApiResponse<DriverTripDetails>;
+
+export type DriverTripStatisticsResponse =
+  ApiResponse<DriverTripStatistics>;
 
 export type ExteriorUploadImage =
   | "FRONT"

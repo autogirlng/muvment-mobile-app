@@ -3,11 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetchClient } from "../client.fetch";
 import type {
   DriverTripDetailsResponse,
+  DriverTripStatisticsResponse,
   DriverTripsQueryParams,
   DriverTripsResponse,
 } from "../types";
 
 export const DRIVER_APP_TRIPS_PATH = "/driver-app/trips";
+export const DRIVER_APP_TRIP_STATISTICS_PATH =
+  `${DRIVER_APP_TRIPS_PATH}/statistics`;
 
 const DEFAULT_PAGE = 0;
 const DEFAULT_PAGE_SIZE = 10;
@@ -75,5 +78,19 @@ export const useDriverTrip = (id?: string) =>
       return response.data;
     },
     enabled: Boolean(id),
+    staleTime: 30_000,
+  });
+
+export const useDriverTripStatistics = () =>
+  useQuery<DriverTripStatisticsResponse, Error>({
+    queryKey: ["driver-trip-statistics"],
+    queryFn: async () => {
+      const response =
+        await apiFetchClient.get<DriverTripStatisticsResponse>(
+          DRIVER_APP_TRIP_STATISTICS_PATH,
+        );
+
+      return response.data;
+    },
     staleTime: 30_000,
   });
