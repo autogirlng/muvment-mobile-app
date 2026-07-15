@@ -30,10 +30,12 @@ import { useDriverTrip } from '../../src/api/hooks/useTrips';
 import type {
   DriverTripDetails,
   DriverTripLocation,
+  DriverTripStatus,
 } from '../../src/api/types';
 import { openMapForCoordinates } from '../../src/utils/deviceActions';
 import {
   getDriverTripBookingBadgeLabel,
+  getDriverTripStatusLabel,
   getDriverTripBookingTimerType,
   type DriverTripBookingTimerType,
 } from '../../src/utils/driverTrips';
@@ -54,6 +56,7 @@ const getStatusFromBadges = (badges: { label: string }[]) => {
 const getBannerMessage = (status: string) => {
   switch (status) {
     case 'ONGOING':
+    case 'EXTRA TIME':
       return 'Trip Ongoing - Complete Ride Safely';
     case 'COMPLETE':
       return 'Trip Complete';
@@ -100,9 +103,33 @@ const getStageFromStatus = (status: string): TripStageKey | null => {
     case 'RUNNING LATE':
       return 'runningLate';
     case 'ONGOING':
+    case 'EXTRA TIME':
       return 'ongoing';
     case 'COMPLETE':
       return 'complete';
+    default:
+      return null;
+  }
+};
+
+const getStageFromDriverTripStatus = (
+  status?: DriverTripStatus | null,
+): TripStageKey | null => {
+  switch (status) {
+    case 'NOT_STARTED':
+      return 'notStarted';
+    case 'CHECKED_IN':
+      return 'checkedIn';
+    case 'AWAITING_PICKUP':
+      return 'awaitingPickup';
+    case 'RUNNING_LATE':
+      return 'runningLate';
+    case 'ONGOING':
+    case 'EXTRA_TIME':
+      return 'ongoing';
+    case 'COMPLETE':
+      return 'complete';
+    case 'CANCELLED':
     default:
       return null;
   }
@@ -210,6 +237,7 @@ const getStatusStyle = (status: string) => {
     case 'RUNNING LATE':
       return { banner: 'bg-[#DC2626]', badge: 'bg-[#D92D20]' };
     case 'ONGOING':
+    case 'EXTRA TIME':
       return { banner: 'bg-[#0A8F2A]', badge: 'bg-[#12B76A]' };
     case 'COMPLETE':
       return { banner: 'bg-[#667185]', badge: 'bg-[#667185]' };
@@ -295,9 +323,18 @@ export default function TripDetailScreen() {
   const transitionDriverTripStatus = useTransitionDriverTripStatus();
   const driverTripDetails = driverTripQuery.data?.data;
   const selectedTrip = FLAT_TRIPS_DATA.find((trip) => trip.id === tripId);
-  const selectedStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
-  const selectedStage = getStageFromParam(stage) ?? getStageFromStatus(selectedStatus);
+  const backendTripStatus = driverTripDetails?.driverTripStatus;
+  const fallbackStatus = selectedTrip ? getStatusFromBadges(selectedTrip.badges) : MOCK_TRIP_DETAILS.status;
+  const fallbackStage = getStageFromParam(stage) ?? getStageFromStatus(fallbackStatus);
+  const selectedStage = backendTripStatus
+    ? getStageFromDriverTripStatus(backendTripStatus)
+    : fallbackStage;
   const stagedTripDetails = selectedStage ? MOCK_TRIP_DETAILS_BY_STAGE[selectedStage] : MOCK_TRIP_DETAILS;
+  const selectedStatus = backendTripStatus
+    ? getDriverTripStatusLabel(backendTripStatus)
+    : selectedStage
+      ? stagedTripDetails.status
+      : fallbackStatus;
   const pickupAddress = getLocationAddress(driverTripDetails?.pickupLocation);
   const dropOffAddress = getLocationAddress(driverTripDetails?.dropOffLocation);
   const bookingTypeName = getDriverTripBookingBadgeLabel(driverTripDetails?.bookingTypeName);
@@ -307,7 +344,7 @@ export default function TripDetailScreen() {
       driverTripDetails?.id ??
       selectedTrip?.tripId ??
       stagedTripDetails.id,
-    status: selectedStage ? stagedTripDetails.status : selectedStatus,
+    status: selectedStatus,
     bannerMessage: selectedStage ? stagedTripDetails.bannerMessage : getBannerMessage(selectedStatus),
     client: {
       ...stagedTripDetails.client,
@@ -471,6 +508,7 @@ export default function TripDetailScreen() {
           },
         };
       case 'ONGOING':
+      case 'EXTRA TIME':
         return {
           title: 'End Ride',
           disabled: false,
@@ -479,6 +517,7 @@ export default function TripDetailScreen() {
           onPress: () => setIsEndRideConfirmVisible(true),
         };
       case 'COMPLETE':
+      case 'CANCELLED':
         return null;
       default:
         return {

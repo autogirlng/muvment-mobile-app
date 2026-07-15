@@ -29,7 +29,8 @@ import {
   formatApiDate,
   getDriverTripStatus,
   groupDriverTripsForCards,
-  UPCOMING_DRIVER_TRIP_STATUSES,
+  isDriverTripActive,
+  isDriverTripUpcoming,
 } from '../../src/utils/driverTrips';
 
 const DASHBOARD_TAB_BAR_HEIGHT = 85;
@@ -41,7 +42,6 @@ type DateFilter = 'Today' | 'Yesterday' | 'Last 7 days' | 'This Month' | null;
 const TRIP_STATUS_BY_TAB: Partial<Record<TripFilter, DriverTripStatus>> = {
   Cancelled: 'CANCELLED',
   Completed: 'COMPLETE',
-  Ongoing: 'ONGOING',
 };
 
 const addDays = (date: Date, days: number) => {
@@ -108,7 +108,11 @@ const matchesActiveTab = (trip: DriverTrip, activeTab: TripFilter) => {
   }
 
   if (activeTab === 'Upcoming') {
-    return !tripStatus || UPCOMING_DRIVER_TRIP_STATUSES.includes(tripStatus);
+    return isDriverTripUpcoming(trip);
+  }
+
+  if (activeTab === 'Ongoing') {
+    return isDriverTripActive(trip);
   }
 
   const expectedStatus = TRIP_STATUS_BY_TAB[activeTab];
@@ -213,7 +217,11 @@ export default function TripsScreen() {
   ), [activeTab, driverTrips]);
 
   const fallbackStatus = selectedTripStatus ?? (
-    activeTab === 'Upcoming' ? 'NOT_STARTED' : undefined
+    activeTab === 'Upcoming'
+      ? 'NOT_STARTED'
+      : activeTab === 'Ongoing'
+        ? 'ONGOING'
+        : undefined
   );
 
   const visibleSections = useMemo(() => {

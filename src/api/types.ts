@@ -199,6 +199,7 @@ export interface DriverTrip {
   driverOwnerType?: string | null;
   createdAt?: string | null;
   tripCustomId?: string | null;
+  driverTripStatus?: DriverTripStatus | null;
   tripStatus?: DriverTripStatus | null;
   status?: DriverTripStatus | null;
 }
@@ -233,6 +234,7 @@ export interface DriverTripDetails {
   dropOffLocation?: DriverTripLocation | null;
   customerName?: string | null;
   customerPhoneNumber?: string | null;
+  driverTripStatus?: DriverTripStatus | null;
   bookingTypeName?: string | null;
   driverOwnerType?: string | null;
   tripCustomId?: string | null;
@@ -247,7 +249,9 @@ export interface DriverTripsQueryParams {
   endDate?: string;
 }
 
-export interface DriverTripsPage extends PaginatedApiResponseData<DriverTrip> {
+export interface DriverTripsPage
+  extends Omit<PaginatedApiResponseData<DriverTrip>, "totalPages"> {
+  totalPages?: number;
   statistics?: DriverTripStatistics;
 }
 

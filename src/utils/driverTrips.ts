@@ -21,11 +21,12 @@ export interface DriverTripSection {
 
 export type DriverTripBookingTimerType = "airport" | "standard" | "full-day";
 
-export const UPCOMING_DRIVER_TRIP_STATUSES: DriverTripStatus[] = [
+export const ACTIVE_DRIVER_TRIP_STATUSES: DriverTripStatus[] = [
   "NOT_STARTED",
   "CHECKED_IN",
   "AWAITING_PICKUP",
   "RUNNING_LATE",
+  "ONGOING",
   "EXTRA_TIME",
 ];
 
@@ -133,10 +134,31 @@ export const formatApiDate = (date: Date) => {
 };
 
 export const getDriverTripStatus = (trip: DriverTrip) =>
-  trip.tripStatus ?? trip.status ?? undefined;
+  trip.driverTripStatus ?? trip.tripStatus ?? trip.status ?? undefined;
 
 export const getDriverTripStatusLabel = (status: DriverTripStatus) =>
   STATUS_LABELS[status];
+
+export const isDriverTripUpcoming = (trip: DriverTrip) => {
+  const status = getDriverTripStatus(trip);
+  const startDate = parseDate(trip.startDateTime);
+
+  if (!startDate || startDate.getTime() <= Date.now()) {
+    return false;
+  }
+
+  return !status || status === "NOT_STARTED";
+};
+
+export const isDriverTripActive = (trip: DriverTrip) => {
+  const status = getDriverTripStatus(trip);
+
+  if (isDriverTripUpcoming(trip)) {
+    return false;
+  }
+
+  return !status || ACTIVE_DRIVER_TRIP_STATUSES.includes(status);
+};
 
 export const getDriverTripSectionTitle = (trip: DriverTrip) => {
   const startDate = parseDate(trip.startDateTime);
