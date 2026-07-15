@@ -1,12 +1,13 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import { 
+  BackHandler,
   View, 
   Text, 
   TouchableOpacity, 
   SafeAreaView, 
   ScrollView,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import Toast from 'react-native-toast-message';
@@ -362,6 +363,24 @@ export default function TripDetailScreen() {
   const [isPickupTooltipVisible, setIsPickupTooltipVisible] = useState(false);
   const [isEndRideConfirmVisible, setIsEndRideConfirmVisible] = useState(false);
   const tripDetailsErrorMessage = getApiErrorMessage(driverTripQuery.error);
+  const navigateToTrips = useCallback(() => {
+    router.replace('/trips');
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          navigateToTrips();
+          return true;
+        },
+      );
+
+      return () => subscription.remove();
+    }, [navigateToTrips]),
+  );
+
   const handleStatusTransition = async ({
     nextStage,
     nextStatus,
@@ -375,7 +394,7 @@ export default function TripDetailScreen() {
         tripId: routeTripId,
       });
 
-      router.push(`/trip/${encodeURIComponent(routeTripId)}?stage=${nextStage}`);
+      router.replace(`/trip/${encodeURIComponent(routeTripId)}?stage=${nextStage}`);
     } catch (error) {
       Toast.show({
         type: 'errorToast',
@@ -398,7 +417,7 @@ export default function TripDetailScreen() {
   const renderBackHeader = () => (
     <View className="px-4 pt-2 pb-4 z-10">
       <TouchableOpacity
-        onPress={() => router.back()}
+        onPress={navigateToTrips}
         className="flex-row items-center ml-[-8px]"
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
