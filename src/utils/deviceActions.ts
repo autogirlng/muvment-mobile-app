@@ -47,8 +47,9 @@ export const openMapForCoordinates = async ({
     Number.isFinite(lat) &&
     typeof lng === 'number' &&
     Number.isFinite(lng);
+  const addressQuery = address?.trim();
 
-  await openMapSearchQuery(hasCoordinates ? `${lat},${lng}` : address?.trim() ?? '');
+  await openMapSearchQuery(addressQuery || (hasCoordinates ? `${lat},${lng}` : ''));
 };
 
 export const capturePhoto = async () => {
