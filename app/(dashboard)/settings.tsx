@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getApiErrorMessage } from '../../src/api/errors';
 import {
@@ -22,6 +23,10 @@ import { DashboardHeader } from '../../src/components/layout/DashboardHeader';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { SettingsToggle } from '../../src/components/common/SettingsToggle';
+
+const DASHBOARD_TAB_BAR_HEIGHT = 85;
+const SIGN_OUT_BUTTON_HEIGHT = 56;
+const SIGN_OUT_BUTTON_GAP = 24;
 
 interface SettingsActionRowProps {
   iconName: keyof typeof Feather.glyphMap;
@@ -70,6 +75,7 @@ const openAppSettings = async () => {
 };
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const notificationSettingsQuery = useDriverNotificationSettings();
   const toggleDriverNotificationSettings =
     useToggleDriverNotificationSettings();
@@ -94,6 +100,10 @@ export default function SettingsScreen() {
     : pushNotifications
       ? 'Trip alerts are enabled'
       : 'Trip alerts are off';
+  const signOutBottomOffset =
+    DASHBOARD_TAB_BAR_HEIGHT + Math.max(insets.bottom, 16);
+  const scrollBottomPadding =
+    signOutBottomOffset + SIGN_OUT_BUTTON_HEIGHT + SIGN_OUT_BUTTON_GAP;
 
   const syncLocationPermission = async () => {
     try {
@@ -255,7 +265,13 @@ export default function SettingsScreen() {
       <AppStatusBar style="dark" backgroundColor="#FAFAFA" />
       <DashboardHeader title="Settings" />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }} bounces={false}>
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: scrollBottomPadding,
+        }}
+        bounces={false}
+      >
         <View className="mt-2">
           <SettingsToggle
             iconName="bell"
@@ -286,23 +302,25 @@ export default function SettingsScreen() {
             onPress={() => router.push('/change-password')}
           />
         </View>
-
-        {/* Pushes the Sign Out button to the bottom of the screen */}
-        <View className="flex-1 justify-end px-6 mt-10">
-          <TouchableOpacity 
-            onPress={() => setSignOutModalVisible(true)} // Opens the modal instead of instantly signing out
-            className="flex-row items-center justify-between bg-white border border-[#E4E7EC] rounded-2xl px-4 h-14 shadow-sm"
-          >
-            <View className="flex-row items-center">
-              <Feather name="log-out" size={20} color="#D92D20" />
-              <Text className="ml-3 font-inter font-medium text-base text-[#D92D20]">
-                Sign Out
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={20} color="#D92D20" />
-          </TouchableOpacity>
-        </View>
       </ScrollView>
+
+      <View
+        className="absolute left-6 right-6"
+        style={{ bottom: signOutBottomOffset }}
+      >
+        <TouchableOpacity 
+          onPress={() => setSignOutModalVisible(true)} // Opens the modal instead of instantly signing out
+          className="flex-row items-center justify-between bg-white border border-[#E4E7EC] rounded-2xl px-4 h-14 shadow-sm"
+        >
+          <View className="flex-row items-center">
+            <Feather name="log-out" size={20} color="#D92D20" />
+            <Text className="ml-3 font-inter font-medium text-base text-[#D92D20]">
+              Sign Out
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color="#D92D20" />
+        </TouchableOpacity>
+      </View>
 
       <ConfirmationModal
         visible={isSignOutModalVisible}
