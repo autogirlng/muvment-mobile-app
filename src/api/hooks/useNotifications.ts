@@ -206,7 +206,7 @@ export const useMarkAllNotificationsRead = () => {
 
   return useMutation<ApiMessageResponse, Error>({
     mutationFn: async () => {
-      const response = await apiFetchClient.put<ApiMessageResponse>(
+      const response = await apiFetchClient.patch<ApiMessageResponse>(
         MARK_ALL_NOTIFICATIONS_READ_PATH,
       );
 
