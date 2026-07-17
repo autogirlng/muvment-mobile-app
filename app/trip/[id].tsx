@@ -311,10 +311,9 @@ const getTripItinerary = (tripDetails?: DriverTripDetails) => {
 };
 
 export default function TripDetailScreen() {
-  const { id, stage, pickupReady, rideType, remainingSeconds } = useLocalSearchParams<{
+  const { id, stage, rideType, remainingSeconds } = useLocalSearchParams<{
     id?: string;
     stage?: string;
-    pickupReady?: string;
     rideType?: string;
     remainingSeconds?: string;
   }>();
@@ -388,7 +387,6 @@ export default function TripDetailScreen() {
   };
   const statusStyle = getStatusStyle(trip.status);
   const routeTripId = tripId?.trim() ?? '';
-  const isPickupTimeReached = pickupReady === 'true' || trip.status === 'RUNNING LATE';
   const timerType = getRideTimerType(rideType, trip.booking.rentalType);
   const timerConfig = getRideTimerConfig(timerType);
   const parsedRemainingSeconds = Number(getStringParam(remainingSeconds));
@@ -495,8 +493,8 @@ export default function TripDetailScreen() {
       case 'AWAITING PICKUP':
         return {
           title: transitionDriverTripStatus.isPending ? 'Updating...' : 'Start Ride',
-          disabled: !isPickupTimeReached || transitionDriverTripStatus.isPending,
-          showPickupTooltip: !isPickupTimeReached,
+          disabled: transitionDriverTripStatus.isPending,
+          showPickupTooltip: false,
           destructive: false,
           onPress: () => {
             void handleStatusTransition({
