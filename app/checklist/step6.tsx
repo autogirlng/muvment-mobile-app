@@ -40,7 +40,7 @@ const getPhotoSummaryLabel = (
 
 export default function ChecklistStep6Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const summaryQuery = usePreRideChecklistSummary(activeTripId);
   const submitPreRideChecklist = useSubmitPreRideChecklist();
@@ -54,12 +54,24 @@ export default function ChecklistStep6Screen() {
   );
   const canSubmit =
     checklistIsValid &&
+    Boolean(activeTripId) &&
     !summaryQuery.isLoading &&
     !summaryQuery.isError &&
     !submitPreRideChecklist.isPending;
 
   const handleSubmit = async () => {
     setIsConfirmVisible(false);
+
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
 
     try {
       await submitPreRideChecklist.mutateAsync({ tripId: activeTripId });

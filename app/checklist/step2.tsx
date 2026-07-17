@@ -39,7 +39,7 @@ const requiredExteriorImageTypes: Record<
 
 export default function ChecklistStep2Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const submitExteriorChecklist = useSubmitExteriorChecklist();
 
   // State for required photos
@@ -249,11 +249,23 @@ export default function ChecklistStep2Screen() {
   );
   const isNextEnabled =
     allRequiredUploaded &&
+    Boolean(activeTripId) &&
     !hasPendingUpload &&
     !hasFailedUpload &&
     !submitExteriorChecklist.isPending;
 
   const handleNext = async () => {
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     if (!isNextEnabled) {
       return;
     }

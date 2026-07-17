@@ -42,6 +42,29 @@ const buildTransitionPath = (
   return `${buildChecklistPath(tripId, "transition")}?${params.toString()}`;
 };
 
+const logChecklistSubmit = ({
+  checklistType,
+  photoCount,
+  step,
+  tripId,
+}: {
+  checklistType?: string;
+  photoCount?: number;
+  step: string;
+  tripId: string;
+}) => {
+  if (!__DEV__) {
+    return;
+  }
+
+  console.log("[checklist:submit]", {
+    checklistType,
+    photoCount,
+    step,
+    tripId,
+  });
+};
+
 const getPreRideChecklistSummaryQueryKey = (tripId?: string) => [
   ...PRE_RIDE_CHECKLIST_SUMMARY_QUERY_KEY,
   tripId,
@@ -111,6 +134,13 @@ export const useSubmitExteriorChecklist = () => {
     { payload: SubmitExteriorChecklistPayload; tripId: string }
   >({
     mutationFn: async ({ payload, tripId }) => {
+      logChecklistSubmit({
+        checklistType: payload.checklistType,
+        photoCount: payload.uploadPhotos.length,
+        step: "exterior",
+        tripId,
+      });
+
       const response = await apiFetchClient.post<
         ChecklistStepResponse,
         SubmitExteriorChecklistPayload
@@ -133,6 +163,13 @@ export const useSubmitInteriorChecklist = () => {
     { payload: SubmitInteriorChecklistPayload; tripId: string }
   >({
     mutationFn: async ({ payload, tripId }) => {
+      logChecklistSubmit({
+        checklistType: payload.checklistType,
+        photoCount: payload.uploadPhotos.length,
+        step: "interior",
+        tripId,
+      });
+
       const response = await apiFetchClient.post<
         ChecklistStepResponse,
         SubmitInteriorChecklistPayload
@@ -155,6 +192,12 @@ export const useSubmitVehicleHealthChecklist = () => {
     { payload: SubmitVehicleHealthChecklistPayload; tripId: string }
   >({
     mutationFn: async ({ payload, tripId }) => {
+      logChecklistSubmit({
+        photoCount: payload.uploadPhotos.length,
+        step: "vehicle-health-check",
+        tripId,
+      });
+
       const response = await apiFetchClient.post<
         ChecklistStepResponse,
         SubmitVehicleHealthChecklistPayload
@@ -177,6 +220,12 @@ export const useSubmitDriverPhotoChecklist = () => {
     { payload: SubmitDriverPhotoChecklistPayload; tripId: string }
   >({
     mutationFn: async ({ payload, tripId }) => {
+      logChecklistSubmit({
+        photoCount: payload.uploadPhotos.length,
+        step: "driver-photo",
+        tripId,
+      });
+
       const response = await apiFetchClient.post<
         ChecklistStepResponse,
         SubmitDriverPhotoChecklistPayload
@@ -199,6 +248,11 @@ export const useSubmitPreRideChecklist = () => {
     { tripId: string }
   >({
     mutationFn: async ({ tripId }) => {
+      logChecklistSubmit({
+        step: "submit",
+        tripId,
+      });
+
       const response =
         await apiFetchClient.post<SubmitPreRideChecklistResponse>(
           buildChecklistPath(tripId, "submit"),

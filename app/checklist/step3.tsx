@@ -50,7 +50,7 @@ const parseNumericInput = (value: string) => {
 
 export default function ChecklistStep3Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const submitInteriorChecklist = useSubmitInteriorChecklist();
 
   // Track all required interior photos
@@ -162,12 +162,24 @@ export default function ChecklistStep3Screen() {
   const hasFailedUpload = photoList.some(photo => photo.status === 'failed');
   const isNextEnabled = 
     photoList.every(isChecklistPhotoUploaded) &&
+    Boolean(activeTripId) &&
     hasValidMetadata &&
     !hasPendingUpload &&
     !hasFailedUpload &&
     !submitInteriorChecklist.isPending;
 
   const handleNext = async () => {
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     if (!isNextEnabled || odometerKM === undefined || fuelLevelInPercentage === undefined) {
       return;
     }

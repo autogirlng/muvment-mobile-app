@@ -387,7 +387,7 @@ export default function TripDetailScreen() {
     itinerary: getTripItinerary(driverTripDetails) ?? stagedTripDetails.itinerary,
   };
   const statusStyle = getStatusStyle(trip.status);
-  const routeTripId = tripId ?? selectedTrip?.id ?? '1';
+  const routeTripId = tripId?.trim() ?? '';
   const isPickupTimeReached = pickupReady === 'true' || trip.status === 'RUNNING LATE';
   const timerType = getRideTimerType(rideType, trip.booking.rentalType);
   const timerConfig = getRideTimerConfig(timerType);
@@ -425,6 +425,17 @@ export default function TripDetailScreen() {
     nextStage: string;
     nextStatus: 'AWAITING_PICKUP' | 'ONGOING';
   }) => {
+    if (!routeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     try {
       await transitionDriverTripStatus.mutateAsync({
         driverTripStatus: nextStatus,

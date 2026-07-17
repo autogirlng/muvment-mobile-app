@@ -41,7 +41,7 @@ const vehicleHealthPhotoTypes: Record<
 
 export default function ChecklistStep4Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const submitVehicleHealthChecklist = useSubmitVehicleHealthChecklist();
 
   // Track all required health check photos
@@ -119,11 +119,23 @@ export default function ChecklistStep4Screen() {
   const hasFailedUpload = photoList.some(photo => photo.status === 'failed');
   const isNextEnabled =
     photoList.every(isChecklistPhotoUploaded) &&
+    Boolean(activeTripId) &&
     !hasPendingUpload &&
     !hasFailedUpload &&
     !submitVehicleHealthChecklist.isPending;
 
   const handleNext = async () => {
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     if (!isNextEnabled) {
       return;
     }

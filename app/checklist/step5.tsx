@@ -28,7 +28,7 @@ import { capturePhoto } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep5Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const submitDriverPhotoChecklist = useSubmitDriverPhotoChecklist();
   const [selfie, setSelfie] = useState(createEmptyChecklistPhoto());
 
@@ -88,9 +88,21 @@ export default function ChecklistStep5Screen() {
 
   const isNextEnabled =
     isChecklistPhotoUploaded(selfie) &&
+    Boolean(activeTripId) &&
     !submitDriverPhotoChecklist.isPending;
 
   const handleNext = async () => {
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     if (!isNextEnabled) {
       return;
     }
