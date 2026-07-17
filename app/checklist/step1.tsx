@@ -15,17 +15,43 @@ import { LocationItem } from '../../src/components/common/LocationItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { VehicleCard } from '../../src/components/common/VehicleCard';
 import { getApiErrorMessage } from '../../src/api/errors';
+import { usePreRideChecklistSummary } from '../../src/api/hooks/usePreRideChecklist';
 import { useDriverTrip } from '../../src/api/hooks/useTrips';
+import type { PreRideChecklistSummary } from '../../src/api/types';
 import { openMapForAddress } from '../../src/utils/deviceActions';
 
 const getDisplayValue = (value: string | null | undefined, fallback: string) =>
   value?.trim() || fallback;
 
+const getResumeRoute = (tripId: string, summary?: PreRideChecklistSummary) => {
+  const encodedTripId = encodeURIComponent(tripId);
+
+  if (!summary?.exteriorPhotos?.valid) {
+    return `/checklist/step2?tripId=${encodedTripId}`;
+  }
+
+  if (!summary.interiorPhotos?.valid) {
+    return `/checklist/step3?tripId=${encodedTripId}`;
+  }
+
+  if (!summary.vehicleHealthCheckPhotos?.valid) {
+    return `/checklist/step4?tripId=${encodedTripId}`;
+  }
+
+  if (!summary.driverPhoto?.valid) {
+    return `/checklist/step5?tripId=${encodedTripId}`;
+  }
+
+  return `/checklist/step6?tripId=${encodedTripId}`;
+};
+
 export default function ChecklistStep1Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId?.trim();
   const driverTripQuery = useDriverTrip(activeTripId);
+  const checklistSummaryQuery = usePreRideChecklistSummary(activeTripId);
   const driverTripDetails = driverTripQuery.data?.data;
+  const checklistSummary = checklistSummaryQuery.data?.data;
   const pickupAddress = getDisplayValue(
     driverTripDetails?.pickupLocation?.location,
     'Pickup location unavailable',
@@ -140,9 +166,10 @@ export default function ChecklistStep1Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title="Next"
+        title={checklistSummaryQuery.isLoading ? 'Checking...' : 'Next'}
         activeOpacity={0.8}
-        onPress={() => router.push(`/checklist/step2?tripId=${encodeURIComponent(activeTripId)}`)}
+        disabled={checklistSummaryQuery.isLoading}
+        onPress={() => router.push(getResumeRoute(activeTripId, checklistSummary))}
       />
       </View>
 

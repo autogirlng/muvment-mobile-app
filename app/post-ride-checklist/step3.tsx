@@ -50,7 +50,7 @@ const parseNumericInput = (value: string) => {
 
 export default function PostRideChecklistStep3Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const submitInteriorChecklist = useSubmitInteriorChecklist();
   const [photos, setPhotos] = useState({
     boot: createEmptyChecklistPhoto(),
@@ -63,7 +63,6 @@ export default function PostRideChecklistStep3Screen() {
   const [fuelLevel, setFuelLevel] = useState('');
   const photoRequirements = MOCK_POST_RIDE_CHECKLIST.interiorPhotos.required;
   const [dashboardRequirement, ...interiorRequirements] = photoRequirements;
-  const extractedValues = MOCK_POST_RIDE_CHECKLIST.interiorPhotos.extractedValues;
 
   const handleDashboardPick = async () => {
     await handleImagePick('dashboard');
@@ -125,16 +124,6 @@ export default function PostRideChecklistStep3Screen() {
       return;
     }
 
-    if (field === 'dashboard') {
-      setOdometer(extractedValues.odometer);
-      setFuelLevel(extractedValues.fuelLevel.replace('%', ''));
-      Toast.show({
-        type: 'successToast',
-        text1: 'Data Extracted',
-        text2: 'Odometer and fuel levels captured successfully.',
-        position: 'top',
-      });
-    }
   };
 
   const handleRemovePhoto = (field: RequiredInteriorPhotoId) => {
@@ -142,11 +131,6 @@ export default function PostRideChecklistStep3Screen() {
       ...currentPhotos,
       [field]: createEmptyChecklistPhoto(),
     }));
-
-    if (field === 'dashboard') {
-      setOdometer('');
-      setFuelLevel('');
-    }
   };
 
   const photoList = Object.values(photos);
@@ -162,12 +146,24 @@ export default function PostRideChecklistStep3Screen() {
   const hasFailedUpload = photoList.some((photo) => photo.status === 'failed');
   const isNextEnabled =
     photoList.every(isChecklistPhotoUploaded) &&
+    Boolean(activeTripId) &&
     hasValidMetadata &&
     !hasPendingUpload &&
     !hasFailedUpload &&
     !submitInteriorChecklist.isPending;
 
   const handleNext = async () => {
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     if (!isNextEnabled || odometerKM === undefined || fuelLevelInPercentage === undefined) {
       return;
     }
@@ -224,7 +220,7 @@ export default function PostRideChecklistStep3Screen() {
 
         <View className="bg-[#E32636] px-5 py-3 mb-6 w-full">
           <Text className="text-white font-inter font-medium text-[13px] leading-5">
-            Start with the dashboard photo - we'll automatically extract the odometer and fuel readings.
+            Capture the dashboard photo, then enter the odometer and fuel readings.
           </Text>
         </View>
 
@@ -242,7 +238,7 @@ export default function PostRideChecklistStep3Screen() {
           />
 
           <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mt-2 mb-4">
-            Auto-Extracted Values
+            Vehicle Readings
           </Text>
 
           <View className="flex-row justify-between mb-6 gap-3">

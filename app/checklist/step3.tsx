@@ -62,7 +62,7 @@ export default function ChecklistStep3Screen() {
     rearSeats: createEmptyChecklistPhoto(),
   });
 
-  // Track the extracted values
+  // Track the readings entered by the driver.
   const [odometer, setOdometer] = useState('');
   const [fuelLevel, setFuelLevel] = useState('');
 
@@ -126,29 +126,16 @@ export default function ChecklistStep3Screen() {
       return;
     }
 
-    if (field === 'dashboard') {
-      // Simulate a brief API loading delay for the AI extraction
-      setOdometer('45,287');
-      setFuelLevel('30');
-      Toast.show({
-        type: 'successToast',
-        text1: 'Data Extracted',
-        text2: 'Odometer and fuel levels captured successfully.',
-        position: 'top',
-      });
-    }
   };
 
   const handleRemovePhoto = (field: InteriorPhotoKey) => {
     setPhotos(prev => ({ ...prev, [field]: createEmptyChecklistPhoto() }));
-    // If they remove the dashboard photo, clear the auto-extracted values
-    if (field === 'dashboard') {
-      setOdometer('');
-      setFuelLevel('');
-    }
   };
 
-  // Next is enabled if all photos are provided and the extracted values exist
+  const getPhotoSubtitle = (field: InteriorPhotoKey, subtitle: string) =>
+    photos[field].status === 'uploading' ? 'Uploading...' : subtitle;
+
+  // Next is enabled if all photos are provided and the readings are valid.
   const photoList = Object.values(photos);
   const odometerKM = parseNumericInput(odometer);
   const fuelLevelInPercentage = parseNumericInput(fuelLevel);
@@ -240,7 +227,7 @@ export default function ChecklistStep3Screen() {
         {/* Red Instruction Banner */}
         <View className="bg-[#E32636] px-5 py-3 mb-6 w-full">
           <Text className="text-white font-inter font-medium text-[13px] leading-5">
-            Start with the dashboard photo - we'll automatically extract the odometer and fuel readings.
+            Capture the dashboard photo, then enter the odometer and fuel readings.
           </Text>
         </View>
 
@@ -252,15 +239,15 @@ export default function ChecklistStep3Screen() {
           {/* 1. Dashboard Upload */}
           <PhotoUploadCard
             title="Dashboard"
-            subtitle="Must show odometer AND fuel gauge clearly"
+            subtitle={getPhotoSubtitle('dashboard', 'Must show odometer AND fuel gauge clearly')}
             imageUri={photos.dashboard.localUri}
             onPress={handleDashboardPick}
             onRemove={() => handleRemovePhoto('dashboard')}
           />
 
-          {/* Auto-Extracted Values Section */}
+          {/* Vehicle Readings Section */}
           <Text className="font-inter font-semibold text-[13px] text-[#101928] uppercase tracking-wider mt-2 mb-4">
-            Auto-Extracted Values
+            Vehicle Readings
           </Text>
 
           <View className="flex-row justify-between mb-6 space-x-3">
@@ -302,7 +289,7 @@ export default function ChecklistStep3Screen() {
           {/* Remaining Interior Photos */}
           <PhotoUploadCard
             title="Driver Side"
-            subtitle="Seat, door panel, floor area"
+            subtitle={getPhotoSubtitle('driverSide', 'Seat, door panel, floor area')}
             imageUri={photos.driverSide.localUri}
             onPress={() => handleImagePick('driverSide')}
             onRemove={() => handleRemovePhoto('driverSide')}
@@ -310,7 +297,7 @@ export default function ChecklistStep3Screen() {
           
           <PhotoUploadCard
             title="Passenger Side"
-            subtitle="Seat, floor, glove box"
+            subtitle={getPhotoSubtitle('passengerSide', 'Seat, floor, glove box')}
             imageUri={photos.passengerSide.localUri}
             onPress={() => handleImagePick('passengerSide')}
             onRemove={() => handleRemovePhoto('passengerSide')}
@@ -318,7 +305,7 @@ export default function ChecklistStep3Screen() {
           
           <PhotoUploadCard
             title="Rear Seats"
-            subtitle="Back seat condition, floor"
+            subtitle={getPhotoSubtitle('rearSeats', 'Back seat condition, floor')}
             imageUri={photos.rearSeats.localUri}
             onPress={() => handleImagePick('rearSeats')}
             onRemove={() => handleRemovePhoto('rearSeats')}
@@ -326,7 +313,7 @@ export default function ChecklistStep3Screen() {
           
           <PhotoUploadCard
             title="Boot/Trunk"
-            subtitle="Trunk space, spare tire area"
+            subtitle={getPhotoSubtitle('boot', 'Trunk space, spare tire area')}
             imageUri={photos.boot.localUri}
             onPress={() => handleImagePick('boot')}
             onRemove={() => handleRemovePhoto('boot')}
