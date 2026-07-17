@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import { 
   BackHandler,
   View, 
@@ -136,6 +136,7 @@ const getStageFromDriverTripStatus = (
 };
 
 type RideTimerType = DriverTripBookingTimerType;
+type RideTimerConfig = ReturnType<typeof getRideTimerConfig>;
 
 const getStringParam = (value?: string | string[]) => (
   Array.isArray(value) ? value[0] : value
@@ -296,6 +297,62 @@ const formatDurationLabel = (duration?: number | null) => {
   return `${duration} hr${duration === 1 ? '' : 's'}`;
 };
 
+const getPositiveSecondsBetween = (startDate?: Date, endDate?: Date) => {
+  if (!startDate || !endDate) {
+    return undefined;
+  }
+
+  const seconds = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
+
+  return seconds > 0 ? seconds : undefined;
+};
+
+const getTripDurationSeconds = (duration?: number | null) => {
+  if (duration === undefined || duration === null || !Number.isFinite(duration) || duration <= 0) {
+    return undefined;
+  }
+
+  return Math.round(duration * 60 * 60);
+};
+
+const getRideTimerFromTripDetails = ({
+  bookingTypeName,
+  endDateTime,
+  fallbackConfig,
+  fallbackRemainingSeconds,
+  nowMs,
+  startDateTime,
+  tripDuration,
+}: {
+  bookingTypeName?: string | null;
+  endDateTime?: string | null;
+  fallbackConfig: RideTimerConfig;
+  fallbackRemainingSeconds?: number;
+  nowMs: number;
+  startDateTime?: string | null;
+  tripDuration?: number | null;
+}) => {
+  const startDate = parseApiDate(startDateTime);
+  const endDate = parseApiDate(endDateTime);
+  const totalSeconds =
+    getPositiveSecondsBetween(startDate, endDate) ??
+    getTripDurationSeconds(tripDuration) ??
+    fallbackConfig.totalSeconds;
+  const secondsUntilEnd = endDate
+    ? Math.max(0, Math.floor((endDate.getTime() - nowMs) / 1000))
+    : undefined;
+  const remainingSeconds = Math.min(
+    totalSeconds,
+    secondsUntilEnd ?? fallbackRemainingSeconds ?? fallbackConfig.defaultRemainingSeconds,
+  );
+
+  return {
+    label: compact(bookingTypeName) ?? fallbackConfig.label,
+    remainingSeconds,
+    totalSeconds,
+  };
+};
+
 const getLocationAddress = (location?: DriverTripLocation | null) =>
   compact(location?.location);
 
@@ -390,13 +447,24 @@ export default function TripDetailScreen() {
   const timerType = getRideTimerType(rideType, trip.booking.rentalType);
   const timerConfig = getRideTimerConfig(timerType);
   const parsedRemainingSeconds = Number(getStringParam(remainingSeconds));
-  const timerRemainingSeconds = Number.isFinite(parsedRemainingSeconds)
+  const routeRemainingSeconds = Number.isFinite(parsedRemainingSeconds) && parsedRemainingSeconds >= 0
     ? parsedRemainingSeconds
-    : timerConfig.defaultRemainingSeconds;
+    : undefined;
+  const isRideTimerVisible = trip.status === 'ONGOING' || trip.status === 'EXTRA TIME';
 
+  const [timerNowMs, setTimerNowMs] = useState(() => Date.now());
   const [isCallModalVisible, setIsCallModalVisible] = useState(false);
   const [isPickupTooltipVisible, setIsPickupTooltipVisible] = useState(false);
   const [isEndRideConfirmVisible, setIsEndRideConfirmVisible] = useState(false);
+  const rideTimer = getRideTimerFromTripDetails({
+    bookingTypeName: driverTripDetails?.bookingTypeName,
+    endDateTime: driverTripDetails?.endDateTime,
+    fallbackConfig: timerConfig,
+    fallbackRemainingSeconds: routeRemainingSeconds,
+    nowMs: timerNowMs,
+    startDateTime: driverTripDetails?.startDateTime,
+    tripDuration: driverTripDetails?.tripDuration,
+  });
   const tripDetailsErrorMessage = getApiErrorMessage(driverTripQuery.error);
   const navigateToTrips = useCallback(() => {
     router.replace('/trips');
@@ -415,6 +483,19 @@ export default function TripDetailScreen() {
       return () => subscription.remove();
     }, [navigateToTrips]),
   );
+
+  useEffect(() => {
+    if (!isRideTimerVisible) {
+      return undefined;
+    }
+
+    setTimerNowMs(Date.now());
+    const intervalId = setInterval(() => {
+      setTimerNowMs(Date.now());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [isRideTimerVisible]);
 
   const handleStatusTransition = async ({
     nextStage,
@@ -594,17 +675,17 @@ export default function TripDetailScreen() {
       )}
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} bounces={true}>
-        {trip.status === 'ONGOING' && (
+        {isRideTimerVisible && (
           <View className="items-center mb-6">
             <TimerRing
-              remainingSeconds={timerRemainingSeconds}
-              totalSeconds={timerConfig.totalSeconds}
+              remainingSeconds={rideTimer.remainingSeconds}
+              totalSeconds={rideTimer.totalSeconds}
             />
             <Text className="font-inter text-[#667185] text-[13px] mt-4 mb-1">
               Time remaining
             </Text>
             <Text className="font-inter font-bold text-[#1D2739] text-[17px]">
-              {timerConfig.label}
+              {rideTimer.label}
             </Text>
           </View>
         )}
