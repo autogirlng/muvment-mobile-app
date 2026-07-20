@@ -11,6 +11,7 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { CustomBack } from '../../src/components/common/CustomBack';
+import { EmptyState } from '../../src/components/common/EmptyState';
 import { PhotoUploadCard } from '../../src/components/common/PhotoUploadCard';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { getApiErrorMessage } from '../../src/api/errors';
@@ -40,7 +41,7 @@ const requiredExteriorImageTypes: Record<
 
 export default function PostRideChecklistStep2Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const submitExteriorChecklist = useSubmitExteriorChecklist();
   const [requiredPhotos, setRequiredPhotos] = useState({
     back: createEmptyChecklistPhoto(),
@@ -252,11 +253,23 @@ export default function PostRideChecklistStep2Screen() {
   );
   const isNextEnabled =
     allRequiredUploaded &&
+    Boolean(activeTripId) &&
     !hasPendingUpload &&
     !hasFailedUpload &&
     !submitExteriorChecklist.isPending;
 
   const handleNext = async () => {
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
     if (!isNextEnabled) {
       return;
     }
@@ -294,6 +307,21 @@ export default function PostRideChecklistStep2Screen() {
       });
     }
   };
+
+  if (!activeTripId) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        <View className="px-4 pt-2 pb-2 z-10">
+          <CustomBack color="#101928" />
+        </View>
+        <EmptyState
+          title="Trip unavailable"
+          description="Missing trip ID. Please go back and select a trip again."
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>

@@ -15,17 +15,39 @@ import { LocationItem } from '../../src/components/common/LocationItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { VehicleCard } from '../../src/components/common/VehicleCard';
 import { getApiErrorMessage } from '../../src/api/errors';
+import { usePostRideChecklistAggregate } from '../../src/api/hooks/usePreRideChecklist';
 import { useDriverTrip } from '../../src/api/hooks/useTrips';
+import type { PostRideChecklistAggregate } from '../../src/api/types';
 import { openMapForAddress } from '../../src/utils/deviceActions';
 
 const getDisplayValue = (value: string | null | undefined, fallback: string) =>
   value?.trim() || fallback;
 
+const getResumeRoute = (
+  tripId: string,
+  aggregate?: PostRideChecklistAggregate,
+) => {
+  const encodedTripId = encodeURIComponent(tripId);
+  const postTripSummary = aggregate?.postTripSummary;
+
+  if (!postTripSummary?.exteriorPhotos.valid) {
+    return `/post-ride-checklist/step2?tripId=${encodedTripId}`;
+  }
+
+  if (!postTripSummary.interiorPhotos.valid) {
+    return `/post-ride-checklist/step3?tripId=${encodedTripId}`;
+  }
+
+  return `/post-ride-checklist/step4?tripId=${encodedTripId}`;
+};
+
 export default function PostRideChecklistStep1Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
   const activeTripId = tripId?.trim();
   const driverTripQuery = useDriverTrip(activeTripId);
+  const aggregateQuery = usePostRideChecklistAggregate(activeTripId);
   const driverTripDetails = driverTripQuery.data?.data;
+  const checklistAggregate = aggregateQuery.data?.data;
   const dropOffAddress = getDisplayValue(
     driverTripDetails?.dropOffLocation?.location,
     'Drop-off location unavailable',
@@ -123,9 +145,10 @@ export default function PostRideChecklistStep1Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title="Next"
+        title={aggregateQuery.isLoading ? 'Checking...' : 'Next'}
         activeOpacity={0.8}
-        onPress={() => router.push(`/post-ride-checklist/step2?tripId=${encodeURIComponent(activeTripId)}`)}
+        disabled={aggregateQuery.isLoading}
+        onPress={() => router.push(getResumeRoute(activeTripId, checklistAggregate))}
       />
       </View>
     </SafeAreaView>

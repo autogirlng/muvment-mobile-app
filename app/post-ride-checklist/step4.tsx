@@ -12,6 +12,7 @@ import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ChecklistFooter } from '../../src/components/common/ChecklistFooter';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { CustomBack } from '../../src/components/common/CustomBack';
+import { EmptyState } from '../../src/components/common/EmptyState';
 import { NumberedListItem } from '../../src/components/common/NumberedListItem';
 import { StepIndicator } from '../../src/components/common/StepIndicator';
 import { SummaryCard } from '../../src/components/common/SummaryCard';
@@ -39,7 +40,7 @@ const getPhotoSummaryLabel = (
 
 export default function PostRideChecklistStep4Screen() {
   const { tripId } = useLocalSearchParams<{ tripId?: string }>();
-  const activeTripId = tripId ?? '1';
+  const activeTripId = tripId?.trim() ?? '';
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const aggregateQuery = usePostRideChecklistAggregate(activeTripId);
   const transitionDriverTripStatus = useTransitionDriverTripStatus();
@@ -53,12 +54,24 @@ export default function PostRideChecklistStep4Screen() {
   );
   const canSubmit =
     postRideChecklistIsValid &&
+    Boolean(activeTripId) &&
     !aggregateQuery.isLoading &&
     !aggregateQuery.isError &&
     !transitionDriverTripStatus.isPending;
 
   const handleSubmit = async () => {
     setIsConfirmVisible(false);
+
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
 
     try {
       await transitionDriverTripStatus.mutateAsync({
@@ -74,7 +87,7 @@ export default function PostRideChecklistStep4Screen() {
         topOffset: 60,
       });
 
-      router.replace(`/post-ride-checklist/success?tripId=${encodeURIComponent(activeTripId)}`);
+      router.replace(`/trip/${encodeURIComponent(activeTripId)}?stage=complete`);
     } catch (error) {
       Toast.show({
         type: 'errorToast',
@@ -85,6 +98,21 @@ export default function PostRideChecklistStep4Screen() {
       });
     }
   };
+
+  if (!activeTripId) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+        <View className="px-4 pt-2 pb-2 z-10">
+          <CustomBack color="#101928" />
+        </View>
+        <EmptyState
+          title="Trip unavailable"
+          description="Missing trip ID. Please go back and select a trip again."
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={{ flex: 1, backgroundColor: '#F8FAFC' }}>

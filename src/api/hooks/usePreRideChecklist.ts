@@ -7,6 +7,7 @@ import {
 import { apiFetchClient } from "../client.fetch";
 import type {
   ChecklistStepResponse,
+  DriverTripDetailsResponse,
   DriverTripStatus,
   PostRideChecklistAggregateResponse,
   PreRideChecklistSummaryResponse,
@@ -288,7 +289,23 @@ export const useTransitionDriverTripStatus = () => {
 
       return response.data;
     },
-    onSuccess: (_response, { tripId }) => {
+    onSuccess: (response, { tripId }) => {
+      queryClient.setQueryData<DriverTripDetailsResponse>(
+        ["driver-trip", tripId],
+        (currentTrip) => {
+          if (!currentTrip?.data) {
+            return currentTrip;
+          }
+
+          return {
+            ...currentTrip,
+            data: {
+              ...currentTrip.data,
+              driverTripStatus: response.data.driverTripStatus,
+            },
+          };
+        },
+      );
       invalidateChecklistQueries(queryClient, tripId);
       void queryClient.invalidateQueries({
         queryKey: ["driver-trip", tripId],
