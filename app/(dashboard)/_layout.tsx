@@ -42,13 +42,6 @@ export default function DashboardLayout() {
           }} 
         />
         <Tabs.Screen 
-          name="payment" 
-          options={{ 
-            title: 'Payments', 
-            tabBarIcon: ({ color }) => <Ionicons name="card-outline" size={24} color={color} /> 
-          }} 
-        />
-        <Tabs.Screen 
           name="settings" 
           options={{ 
             title: 'Settings', 

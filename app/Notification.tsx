@@ -311,7 +311,7 @@ export default function NotificationsScreen() {
         <View className="flex-1 justify-center pb-20">
           <EmptyState
             title="No notifications yet"
-            description="When you receive trip updates, reminders, or payment alerts, they'll appear here."
+            description="When you receive trip updates, reminders, or alerts, they'll appear here."
           />
         </View>
       )}
