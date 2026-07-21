@@ -27,6 +27,9 @@ import { SettingsToggle } from '../../src/components/common/SettingsToggle';
 const DASHBOARD_TAB_BAR_HEIGHT = 85;
 const SIGN_OUT_BUTTON_HEIGHT = 56;
 const SIGN_OUT_BUTTON_GAP = 24;
+const PRIVACY_NOTICE_URL = 'https://autogirl.ng/privacy-policy/';
+const EMPLOYEE_TERMS_URL = 'https://autogirl.ng/terms-conditions/';
+const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
   iconName: keyof typeof Feather.glyphMap;
@@ -71,6 +74,39 @@ const openAppSettings = async () => {
     await Linking.openSettings();
   } catch {
     await Linking.openURL('app-settings:');
+  }
+};
+
+const openExternalUrl = async (url: string) => {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Toast.show({
+      type: 'errorToast',
+      text1: 'Unable to open link',
+      text2: 'Please try again later.',
+      position: 'top',
+      topOffset: 60,
+    });
+  }
+};
+
+const reportProblem = async () => {
+  const subject = encodeURIComponent('Muvment Driver App Problem Report');
+  const body = encodeURIComponent(
+    'Please describe the problem you experienced:\n\n',
+  );
+
+  try {
+    await Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`);
+  } catch {
+    Toast.show({
+      type: 'errorToast',
+      text1: 'Unable to open email',
+      text2: `Please contact ${SUPPORT_EMAIL}.`,
+      position: 'top',
+      topOffset: 60,
+    });
   }
 };
 
@@ -300,6 +336,27 @@ export default function SettingsScreen() {
             title="Change Password"
             description="Update your account password"
             onPress={() => router.push('/change-password')}
+          />
+
+          <SettingsActionRow
+            iconName="shield"
+            title="Privacy Notice"
+            description="Review how your information is handled"
+            onPress={() => openExternalUrl(PRIVACY_NOTICE_URL)}
+          />
+
+          <SettingsActionRow
+            iconName="file-text"
+            title="Employee Terms of Use"
+            description="Read driver app terms and conditions"
+            onPress={() => openExternalUrl(EMPLOYEE_TERMS_URL)}
+          />
+
+          <SettingsActionRow
+            iconName="alert-circle"
+            title="Report a Problem"
+            description="Contact support about an app issue"
+            onPress={reportProblem}
           />
         </View>
       </ScrollView>
