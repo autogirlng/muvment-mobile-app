@@ -9,6 +9,7 @@ import {
   type IMessage,
   type StompSubscription,
 } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 import { useQueryClient } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
 
@@ -35,7 +36,26 @@ const NOTIFICATION_PRIORITIES: NotificationPriority[] = [
   "MEDIUM",
   "HIGH",
 ];
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL?.trim();
+
+const getSockJsUrl = (rawUrl: string | undefined) => {
+  const trimmedUrl = rawUrl?.trim();
+
+  if (!trimmedUrl) {
+    return undefined;
+  }
+
+  if (trimmedUrl.startsWith("wss://")) {
+    return `https://${trimmedUrl.slice("wss://".length)}`;
+  }
+
+  if (trimmedUrl.startsWith("ws://")) {
+    return `http://${trimmedUrl.slice("ws://".length)}`;
+  }
+
+  return trimmedUrl;
+};
+
+const WS_URL = getSockJsUrl(process.env.EXPO_PUBLIC_WS_URL);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -146,6 +166,20 @@ const getToastType = (notification: UserNotification) =>
     ? "errorToast"
     : "successToast";
 
+const getSocketEventDetails = (event: unknown) => {
+  if (!isRecord(event)) {
+    return event;
+  }
+
+  return {
+    code: event.code,
+    message: event.message,
+    reason: event.reason,
+    type: event.type,
+    wasClean: event.wasClean,
+  };
+};
+
 export function NotificationSocketBridge() {
   const queryClient = useQueryClient();
   const currentUserQuery = useCurrentUser();
@@ -187,7 +221,11 @@ export function NotificationSocketBridge() {
     const startClient = async () => {
       const initialConnectHeaders = await readConnectHeaders();
 
-      if (!isActive || !initialConnectHeaders) {
+      if (!isActive) {
+        return;
+      }
+
+      if (!initialConnectHeaders) {
         if (__DEV__) {
           console.warn(
             "[notifications:socket] Missing access token",
@@ -198,9 +236,11 @@ export function NotificationSocketBridge() {
       }
 
       client = new Client({
-        brokerURL: WS_URL,
+        webSocketFactory: () => new SockJS(WS_URL),
         connectHeaders: initialConnectHeaders,
         reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
         debug: () => undefined,
         beforeConnect: async () => {
           const latestConnectHeaders = await readConnectHeaders();
@@ -267,14 +307,21 @@ export function NotificationSocketBridge() {
             );
           }
         },
-        onWebSocketClose: () => {
+        onWebSocketClose: (event) => {
           if (__DEV__) {
-            console.log("[notifications:socket] WebSocket closed");
+            console.log(
+              "[notifications:socket] WebSocket closed",
+              getSocketEventDetails(event),
+            );
           }
         },
-        onWebSocketError: () => {
+        onWebSocketError: (event) => {
           if (__DEV__) {
-            console.warn("[notifications:socket] WebSocket error");
+            console.warn(
+              "[notifications:socket] WebSocket error",
+              getSocketEventDetails(event),
+              { url: WS_URL },
+            );
           }
         },
       });
