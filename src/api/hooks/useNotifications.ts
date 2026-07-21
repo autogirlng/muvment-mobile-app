@@ -189,7 +189,7 @@ export const useMarkNotificationRead = () => {
   return useMutation<MarkNotificationReadResponse, Error, string>({
     mutationFn: async (notificationId) => {
       const response =
-        await apiFetchClient.put<MarkNotificationReadResponse>(
+        await apiFetchClient.patch<MarkNotificationReadResponse>(
           getMarkNotificationReadPath(notificationId),
         );
 
