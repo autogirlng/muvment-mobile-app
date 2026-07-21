@@ -183,6 +183,25 @@ export const useUserNotifications = () =>
     staleTime: 30_000,
   });
 
+export const getUnreadNotificationsCount = (
+  notificationsData?: InfiniteData<UserNotificationsResponse>,
+) =>
+  notificationsData?.pages.reduce(
+    (totalUnreadCount, page) =>
+      totalUnreadCount +
+      page.data.content.filter((notification) => !notification.isRead)
+        .length,
+    0,
+  ) ?? 0;
+
+export const useUnreadNotificationsCount = () => {
+  const notificationsQuery = useUserNotifications();
+
+  return {
+    unreadCount: getUnreadNotificationsCount(notificationsQuery.data),
+  };
+};
+
 export const useMarkNotificationRead = () => {
   const queryClient = useQueryClient();
 

@@ -3,12 +3,13 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 import { StatCard } from '../../src/components/common/StatCard';
 import { TripCard } from '../../src/components/common/TripCard';
 import { EmptyState } from '../../src/components/common/EmptyState';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
+import { NotificationBellButton } from '../../src/components/notifications/NotificationBellButton';
 import { getApiErrorMessage } from '../../src/api/errors';
 import {
   useDriverTripStatistics,
@@ -93,12 +94,7 @@ export default function HomeScreen() {
             </View>
 
             <View className="flex-row items-center gap-x-3 mt-1">
-              <TouchableOpacity 
-                onPress={() => router.push('/Notification')}
-                className="w-10 h-10 rounded-full items-center justify-center relative bg-[#FAFAFA] border border-[#D0D5DD]">
-                <Feather name="bell" size={20} color="#1E3A5F" />
-                <View className="absolute top-0 right-0 w-3 h-3 bg-[#0673FF] rounded-full" />
-              </TouchableOpacity>
+              <NotificationBellButton className="bg-[#FAFAFA]" />
 
               <TouchableOpacity 
                 onPress={() => router.push('/profile')}
