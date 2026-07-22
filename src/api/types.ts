@@ -78,6 +78,19 @@ export interface ForgotPasswordPayload {
 
 export type ForgotPasswordResponse = ApiMessageResponse;
 
+export interface VerifyAccountPayload {
+  email: string;
+  otp: string;
+}
+
+export type VerifyAccountResponse = ApiMessageResponse;
+
+export interface ResendVerificationOtpPayload {
+  email: string;
+}
+
+export type ResendVerificationOtpResponse = ApiMessageResponse;
+
 export interface ResetPasswordPayload {
   email: string;
   otp: string;

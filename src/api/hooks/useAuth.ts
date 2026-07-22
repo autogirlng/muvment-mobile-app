@@ -3,7 +3,9 @@ import { useMutation } from "@tanstack/react-query";
 import {
   apiFetchClient,
   AUTH_LOGIN_PATH,
+  AUTH_RESEND_VERIFICATION_OTP_PATH,
   AUTH_REFRESH_PATH,
+  AUTH_VERIFY_ACCOUNT_PATH,
 } from "../client.fetch";
 import { setStoredAccessToken } from "../authStorage";
 import type {
@@ -14,8 +16,12 @@ import type {
   LoginResponse,
   RefreshTokenPayload,
   RefreshTokenResponse,
+  ResendVerificationOtpPayload,
+  ResendVerificationOtpResponse,
   ResetPasswordPayload,
   ResetPasswordResponse,
+  VerifyAccountPayload,
+  VerifyAccountResponse,
 } from "../types";
 import { useAuthSession } from "../../context/AuthSessionContext";
 
@@ -82,6 +88,38 @@ export const useForgotPassword = () =>
         "/auth/forgot-password",
         payload,
       );
+
+      return response.data;
+    },
+  });
+
+export const useVerifyAccount = () =>
+  useMutation<
+    VerifyAccountResponse,
+    Error,
+    VerifyAccountPayload
+  >({
+    mutationFn: async (payload) => {
+      const response = await apiFetchClient.post<
+        VerifyAccountResponse,
+        VerifyAccountPayload
+      >(AUTH_VERIFY_ACCOUNT_PATH, payload);
+
+      return response.data;
+    },
+  });
+
+export const useResendVerificationOtp = () =>
+  useMutation<
+    ResendVerificationOtpResponse,
+    Error,
+    ResendVerificationOtpPayload
+  >({
+    mutationFn: async (payload) => {
+      const response = await apiFetchClient.post<
+        ResendVerificationOtpResponse,
+        ResendVerificationOtpPayload
+      >(AUTH_RESEND_VERIFICATION_OTP_PATH, payload);
 
       return response.data;
     },

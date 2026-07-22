@@ -15,14 +15,18 @@ import Toast from 'react-native-toast-message';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { CustomOTPInput } from '../../src/components/common/CustomOTPInput';
 import { CustomButton } from '../../src/components/common/CustomButton';
-import { useForgotPassword } from '../../src/api/hooks/useAuth';
+import {
+  useResendVerificationOtp,
+  useVerifyAccount,
+} from '../../src/api/hooks/useAuth';
 import { usePasswordReset } from '../../src/context/PasswordResetContext';
 import { getApiErrorMessage } from '../../src/api/errors';
 
 export default function VerifyCodeScreen() {
   // Initialized with the exact code from your design to show the active state
   const [otpCode, setOtpCode] = useState('');
-  const forgotPassword = useForgotPassword();
+  const verifyAccount = useVerifyAccount();
+  const resendVerificationOtp = useResendVerificationOtp();
   const passwordReset = usePasswordReset();
   
   // Set to 0 to show the active "Resend" link state instead of the countdown
@@ -53,16 +57,31 @@ export default function VerifyCodeScreen() {
       return;
     }
 
-    passwordReset.setOtp(otpCode);
+    try {
+      await verifyAccount.mutateAsync({
+        email: passwordReset.email,
+        otp: otpCode,
+      });
 
-    Toast.show({
-      type: 'successToast',
-      text1: 'Code saved',
-      position: 'top',
-      topOffset: 60,
-    });
+      passwordReset.setOtp(otpCode);
 
-    router.replace("/auth/create-password");
+      Toast.show({
+        type: 'successToast',
+        text1: 'Code verified',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      router.replace("/auth/create-password");
+    } catch (error) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Verification failed',
+        text2: getApiErrorMessage(error) || 'Please check the code and try again',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
   };
 
   const handleResendCode = async () => {
@@ -79,7 +98,7 @@ export default function VerifyCodeScreen() {
     }
 
     try {
-      await forgotPassword.mutateAsync({ email: passwordReset.email });
+      await resendVerificationOtp.mutateAsync({ email: passwordReset.email });
       setTimer(60);
 
       Toast.show({
@@ -147,8 +166,8 @@ export default function VerifyCodeScreen() {
             {/* Verify Button */}
             <View className="mt-2">
               <CustomButton
-                title="Verify"
-                disabled={!isFormValid}
+                title={verifyAccount.isPending ? "Verifying..." : "Verify"}
+                disabled={!isFormValid || verifyAccount.isPending}
                 onPress={handleVerify}
               />
             </View>
@@ -161,11 +180,11 @@ export default function VerifyCodeScreen() {
                 </Text>
               ) : (
                 <TouchableOpacity
-                  disabled={forgotPassword.isPending}
+                  disabled={resendVerificationOtp.isPending}
                   onPress={handleResendCode}
                 >
                   <Text className="text-brand-link font-inter text-base">
-                    {forgotPassword.isPending ? "Resending..." : "Didn't get code? Resend"}
+                    {resendVerificationOtp.isPending ? "Resending..." : "Didn't get code? Resend"}
                   </Text>
                 </TouchableOpacity>
               )}

@@ -145,7 +145,7 @@ export default function PostRideChecklistStep1Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title={aggregateQuery.isLoading ? 'Checking...' : 'Next'}
+        title={aggregateQuery.isLoading ? 'Checking progress...' : 'Next'}
         activeOpacity={0.8}
         disabled={aggregateQuery.isLoading}
         onPress={() => router.push(getResumeRoute(activeTripId, checklistAggregate))}

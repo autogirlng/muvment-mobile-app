@@ -166,7 +166,7 @@ export default function ChecklistStep1Screen() {
       </ScrollView>
 
       <ChecklistFooter
-        title={checklistSummaryQuery.isLoading ? 'Checking...' : 'Next'}
+        title={checklistSummaryQuery.isLoading ? 'Checking progress...' : 'Next'}
         activeOpacity={0.8}
         disabled={checklistSummaryQuery.isLoading}
         onPress={() => router.push(getResumeRoute(activeTripId, checklistSummary))}

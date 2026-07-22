@@ -15,12 +15,17 @@ import type {
 const rawApiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 export const AUTH_REFRESH_PATH = "/auth/refresh-token";
 export const AUTH_LOGIN_PATH = "/auth/login";
+export const AUTH_VERIFY_ACCOUNT_PATH = "/auth/verify-account";
+export const AUTH_RESEND_VERIFICATION_OTP_PATH =
+  "/auth/resend-verification-otp";
 const AUTH_FORGOT_PASSWORD_PATH = "/auth/forgot-password";
 const AUTH_RESET_PASSWORD_PATH = "/auth/reset-password";
 const DRIVER_APPLICATIONS_PATH = "/driver-applications";
 const AUTH_EXEMPT_PATHS = [
   AUTH_LOGIN_PATH,
   AUTH_REFRESH_PATH,
+  AUTH_VERIFY_ACCOUNT_PATH,
+  AUTH_RESEND_VERIFICATION_OTP_PATH,
   AUTH_FORGOT_PASSWORD_PATH,
   AUTH_RESET_PASSWORD_PATH,
   DRIVER_APPLICATIONS_PATH,
