@@ -4,8 +4,6 @@ Operated by Autogirl Limited | muvment.ng
 Last updated: [insert date]
 Effective date: [insert date]
 
-Important: This is a working draft prepared for Autogirl Limited, not legal advice. It reflects how Muvment operates but has not been reviewed by a lawyer. Before publishing, have a qualified legal practitioner review it for compliance with the Nigeria Data Protection Act 2023, the Federal Competition and Consumer Protection Act, and any other applicable law in the places Muvment operates, including Ghana. Fill in every item shown in square brackets before use.
-
 1. Who we are
 Muvment is a vehicle mobility marketplace operated by Autogirl Limited ("Muvment", "we", "us", or "our"). We connect customers with vehicles and professional drivers for hire across our service areas, currently including Lagos, Abuja, Benin City, Enugu, and Port Harcourt in Nigeria, and Accra in Ghana.
 This policy explains what personal information we collect, why we collect it, how we use and share it, and the choices and rights you have. If you have questions, contact us at [privacy@muvment.ng] or at [registered office address].
@@ -100,8 +98,6 @@ export const termsOfUseDocument = {
 Operated by Autogirl Limited | muvment.ng
 Last updated: [insert date]
 Effective date: [insert date]
-
-Important: This is a working draft prepared for Autogirl Limited, not legal advice. It reflects how Muvment operates but has not been reviewed by a lawyer. Before publishing, have a qualified legal practitioner review it for compliance with the Nigeria Data Protection Act 2023, the Federal Competition and Consumer Protection Act, and any other applicable law in the places Muvment operates, including Ghana. Fill in every item shown in square brackets before use.
 
 1. About these terms
 These Terms of Use ("Terms") govern your access to and use of the Muvment website, apps, and services (the "Service"), operated by Autogirl Limited ("Muvment", "we", "us", or "our"). By using the Service or making a booking, you agree to these Terms. If you do not agree, please do not use the Service.

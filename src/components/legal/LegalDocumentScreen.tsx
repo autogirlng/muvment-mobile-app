@@ -29,7 +29,6 @@ interface LegalSection {
 interface ParsedLegalDocument {
   metadata: string[];
   sections: LegalSection[];
-  warning?: string;
 }
 
 const isTopLevelSectionHeading = (line: string) =>
@@ -48,16 +47,10 @@ const parseLegalDocument = (body: string): ParsedLegalDocument => {
     .filter(Boolean);
   const sections: LegalSection[] = [];
   const metadata: string[] = [];
-  let warning: string | undefined;
   let currentSection: LegalSection | undefined;
 
   lines.forEach((line) => {
     if (isDocumentTitle(line)) {
-      return;
-    }
-
-    if (line.startsWith("Important:")) {
-      warning = line;
       return;
     }
 
@@ -84,7 +77,6 @@ const parseLegalDocument = (body: string): ParsedLegalDocument => {
   return {
     metadata,
     sections,
-    warning,
   };
 };
 
@@ -190,20 +182,6 @@ export const LegalDocumentScreen = ({
           paddingHorizontal: 20,
         }}
       >
-        {document.warning && (
-          <View className="bg-[#FEF3F2] border border-[#FECDCA] rounded-lg px-4 py-4 mb-4">
-            <View className="flex-row items-start">
-              <Feather name="alert-circle" size={18} color="#B42318" />
-              <Text className="flex-1 font-inter font-semibold text-[#B42318] text-sm ml-2">
-                Draft notice
-              </Text>
-            </View>
-            <Text className="font-inter text-[#B42318] text-sm leading-6 mt-2">
-              {document.warning.replace("Important: ", "")}
-            </Text>
-          </View>
-        )}
-
         {document.sections.map((section) => {
           const isExpanded = expandedSectionId === section.id;
 
