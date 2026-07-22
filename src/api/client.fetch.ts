@@ -1,13 +1,16 @@
-import * as SecureStore from "expo-secure-store";
-
+import {
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  clearStoredAuthTokens,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  setStoredAccessToken,
+} from "./authStorage";
 import type {
   ApiErrorResponse,
   RefreshTokenPayload,
   RefreshTokenResponse,
 } from "./types";
-
-export const ACCESS_TOKEN_KEY = "accessToken";
-export const REFRESH_TOKEN_KEY = "refreshToken";
 
 const rawApiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 export const AUTH_REFRESH_PATH = "/auth/refresh-token";
@@ -129,13 +132,6 @@ const shouldSkipAuth = (url?: string) => !url || matchesPath(url, AUTH_EXEMPT_PA
 const shouldSkipRefresh = (url?: string) =>
   !url || matchesPath(url, REFRESH_EXEMPT_PATHS);
 
-const clearStoredTokens = async () => {
-  await Promise.all([
-    SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
-    SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
-  ]);
-};
-
 const getApiErrorMessage = (data: ApiFailurePayload, fallback: string) => {
   const message = data?.message;
 
@@ -216,10 +212,10 @@ const fetchRequest = async (url: string, init: RequestInit) => {
 };
 
 const refreshAccessToken = async () => {
-  const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  const refreshToken = await getStoredRefreshToken();
 
   if (!refreshToken) {
-    await clearStoredTokens();
+    await clearStoredAuthTokens();
     return undefined;
   }
 
@@ -241,11 +237,11 @@ const refreshAccessToken = async () => {
       });
     }
 
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+    await setStoredAccessToken(accessToken);
 
     return accessToken;
   } catch {
-    await clearStoredTokens();
+    await clearStoredAuthTokens();
     return undefined;
   }
 };
@@ -269,7 +265,7 @@ const request = async <TResponse, TBody = unknown>(
   const shouldAttachAuth = auth && !shouldSkipAuth(path);
 
   if (shouldAttachAuth) {
-    const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    const accessToken = await getStoredAccessToken();
 
     if (accessToken) {
       requestHeaders.Authorization = `Bearer ${accessToken}`;

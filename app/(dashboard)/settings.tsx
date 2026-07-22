@@ -8,6 +8,7 @@ import {
   ScrollView, 
   SafeAreaView
 } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -23,12 +24,11 @@ import { DashboardHeader } from '../../src/components/layout/DashboardHeader';
 import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { SettingsToggle } from '../../src/components/common/SettingsToggle';
+import { useAuthSession } from '../../src/context/AuthSessionContext';
 
 const DASHBOARD_TAB_BAR_HEIGHT = 85;
 const SIGN_OUT_BUTTON_HEIGHT = 56;
 const SIGN_OUT_BUTTON_GAP = 24;
-const PRIVACY_NOTICE_URL = 'https://autogirl.ng/privacy-policy/';
-const EMPLOYEE_TERMS_URL = 'https://autogirl.ng/terms-conditions/';
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
@@ -77,20 +77,6 @@ const openAppSettings = async () => {
   }
 };
 
-const openExternalUrl = async (url: string) => {
-  try {
-    await Linking.openURL(url);
-  } catch {
-    Toast.show({
-      type: 'errorToast',
-      text1: 'Unable to open link',
-      text2: 'Please try again later.',
-      position: 'top',
-      topOffset: 60,
-    });
-  }
-};
-
 const reportProblem = async () => {
   const subject = encodeURIComponent('Muvment Driver App Problem Report');
   const body = encodeURIComponent(
@@ -112,6 +98,8 @@ const reportProblem = async () => {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const authSession = useAuthSession();
+  const queryClient = useQueryClient();
   const notificationSettingsQuery = useDriverNotificationSettings();
   const toggleDriverNotificationSettings =
     useToggleDriverNotificationSettings();
@@ -278,22 +266,30 @@ export default function SettingsScreen() {
     }
   };
 
-  const confirmSignOut = () => {
-    // 1. Close the modal first
+  const confirmSignOut = async () => {
     setSignOutModalVisible(false);
 
-    // 2. Clear stored auth tokens and call logout when that endpoint is available.
-    
-    // 3. Show success message
-    Toast.show({
-      type: 'successToast',
-      text1: 'Signed out successfully',
-      position: 'top',
-      topOffset: 60,
-    });
+    try {
+      await authSession.signOut();
+      queryClient.clear();
 
-    // 4. Route back to login
-    router.replace('/auth/login');
+      Toast.show({
+        type: 'successToast',
+        text1: 'Signed out successfully',
+        position: 'top',
+        topOffset: 60,
+      });
+
+      router.replace('/auth/login');
+    } catch {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Sign out failed',
+        text2: 'Please try again.',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
   };
 
   return (
@@ -342,14 +338,14 @@ export default function SettingsScreen() {
             iconName="shield"
             title="Privacy Notice"
             description="Review how your information is handled"
-            onPress={() => openExternalUrl(PRIVACY_NOTICE_URL)}
+            onPress={() => router.push('/privacy-policy')}
           />
 
           <SettingsActionRow
             iconName="file-text"
             title="Employee Terms of Use"
             description="Read driver app terms and conditions"
-            onPress={() => openExternalUrl(EMPLOYEE_TERMS_URL)}
+            onPress={() => router.push('/terms-of-use')}
           />
 
           <SettingsActionRow

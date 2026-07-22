@@ -13,7 +13,7 @@ import SockJS from "sockjs-client";
 import { useQueryClient } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
 
-import { ACCESS_TOKEN_KEY } from "../../api/client.fetch";
+import { ACCESS_TOKEN_KEY } from "../../api/authStorage";
 import {
   USER_NOTIFICATIONS_QUERY_KEY,
   upsertLoadedNotification,

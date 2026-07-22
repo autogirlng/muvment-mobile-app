@@ -1,13 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
-import * as SecureStore from "expo-secure-store";
 
 import {
-  ACCESS_TOKEN_KEY,
   apiFetchClient,
   AUTH_LOGIN_PATH,
   AUTH_REFRESH_PATH,
-  REFRESH_TOKEN_KEY,
 } from "../client.fetch";
+import { setStoredAccessToken } from "../authStorage";
 import type {
   ForgotPasswordPayload,
   ForgotPasswordResponse,
@@ -19,6 +17,7 @@ import type {
   ResetPasswordPayload,
   ResetPasswordResponse,
 } from "../types";
+import { useAuthSession } from "../../context/AuthSessionContext";
 
 const getLoginTokens = (responseData: LoginResponseData) => {
   const { accessToken, refreshToken } = responseData;
@@ -32,8 +31,10 @@ const getLoginTokens = (responseData: LoginResponseData) => {
   return { accessToken, refreshToken };
 };
 
-export const useLogin = () =>
-  useMutation<LoginResponse, Error, LoginPayload>({
+export const useLogin = () => {
+  const authSession = useAuthSession();
+
+  return useMutation<LoginResponse, Error, LoginPayload>({
     mutationFn: async (payload) => {
       const response = await apiFetchClient.post<LoginResponse>(
         AUTH_LOGIN_PATH,
@@ -41,15 +42,17 @@ export const useLogin = () =>
       );
       const { accessToken, refreshToken } = getLoginTokens(response.data.data);
 
-      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      await authSession.signIn({ accessToken, refreshToken });
 
       return response.data;
     },
   });
+};
 
-export const useRefreshToken = () =>
-  useMutation<
+export const useRefreshToken = () => {
+  const authSession = useAuthSession();
+
+  return useMutation<
     RefreshTokenResponse,
     Error,
     RefreshTokenPayload
@@ -60,14 +63,13 @@ export const useRefreshToken = () =>
         payload,
       );
 
-      await SecureStore.setItemAsync(
-        ACCESS_TOKEN_KEY,
-        response.data.data.accessToken,
-      );
+      await setStoredAccessToken(response.data.data.accessToken);
+      await authSession.refreshSession();
 
       return response.data;
     },
   });
+};
 
 export const useForgotPassword = () =>
   useMutation<
