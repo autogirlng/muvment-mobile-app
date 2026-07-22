@@ -23,7 +23,12 @@ import {
   isChecklistPhotoUploaded,
   toChecklistUploadedPhoto,
 } from '../../src/utils/checklistPhotos';
-import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
+import {
+  CHECKLIST_UPLOAD_FAILED_MESSAGE,
+  deleteChecklistPhoto,
+  deleteChecklistPhotoBestEffort,
+  uploadChecklistPhoto,
+} from '../../src/utils/mediaUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
 export default function ChecklistStep5Screen() {
@@ -44,7 +49,24 @@ export default function ChecklistStep5Screen() {
       return;
     }
 
-    const photoUri = await capturePhoto();
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    const previousFileUrl = isChecklistPhotoUploaded(selfie)
+      ? selfie.fileUrl
+      : undefined;
+    const photoUri =
+      selfie.status === 'failed' && selfie.localUri
+        ? selfie.localUri
+        : await capturePhoto();
 
     if (!photoUri) {
       return;
@@ -59,6 +81,7 @@ export default function ChecklistStep5Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         'driver-selfie',
+        activeTripId,
       );
 
       setSelfie({
@@ -66,9 +89,11 @@ export default function ChecklistStep5Screen() {
         localUri: photoUri,
         status: 'uploaded',
       });
+
+      void deleteChecklistPhotoBestEffort(previousFileUrl);
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload your selfie.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setSelfie({
         errorMessage: message,
@@ -84,6 +109,25 @@ export default function ChecklistStep5Screen() {
         topOffset: 60,
       });
     }
+  };
+
+  const handleRemoveSelfie = async () => {
+    if (isChecklistPhotoUploaded(selfie)) {
+      try {
+        await deleteChecklistPhoto(selfie.fileUrl);
+      } catch {
+        Toast.show({
+          type: 'errorToast',
+          text1: 'Remove failed',
+          text2: 'Please try removing the photo again.',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+    }
+
+    setSelfie(createEmptyChecklistPhoto());
   };
 
   const isNextEnabled =
@@ -174,7 +218,12 @@ export default function ChecklistStep5Screen() {
           {/* Dedicated Camera/Selfie Capture Card */}
           {selfie.localUri ? (
             // Filled State
-            <View className="border-2 border-[#0673FF] rounded-2xl overflow-hidden mb-6 items-center justify-center bg-black relative h-[340px]">
+            <TouchableOpacity
+              activeOpacity={0.9}
+              className="border-2 border-[#0673FF] rounded-2xl overflow-hidden mb-6 items-center justify-center bg-black relative h-[340px]"
+              disabled={selfie.status !== 'failed'}
+              onPress={handleOpenCamera}
+            >
               <ImageBackground source={{ uri: selfie.localUri }} className="w-full h-full opacity-90" resizeMode="cover">
                 
                 {/* Visual Face Guide Overlay */}
@@ -184,7 +233,7 @@ export default function ChecklistStep5Screen() {
 
                 {/* Retake Button */}
                 <TouchableOpacity 
-                  onPress={() => setSelfie(createEmptyChecklistPhoto())}
+                  onPress={handleRemoveSelfie}
                   className="absolute top-4 right-4 bg-black/40 rounded-full p-2"
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
@@ -199,8 +248,16 @@ export default function ChecklistStep5Screen() {
                   </View>
                 )}
 
+                {selfie.status === 'failed' && (
+                  <View className="absolute bottom-4 left-4 right-4 bg-black/60 rounded-xl px-4 py-3">
+                    <Text className="text-white font-inter font-medium text-center text-sm">
+                      {selfie.errorMessage ?? CHECKLIST_UPLOAD_FAILED_MESSAGE}
+                    </Text>
+                  </View>
+                )}
+
               </ImageBackground>
-            </View>
+            </TouchableOpacity>
           ) : (
             // Empty State
             <View className="border border-dashed border-[#D0D5DD] rounded-2xl py-10 items-center justify-center bg-[#FAFBFC] mb-6">

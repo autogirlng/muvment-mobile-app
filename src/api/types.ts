@@ -297,9 +297,39 @@ export type VehicleHealthCheckPhoto =
 
 export type ChecklistType = "PRE_TRIP" | "POST_TRIP";
 
+export type MediaCategory =
+  | "GENERAL"
+  | "USER_AVATAR"
+  | "DRIVER_DOCUMENT"
+  | "VEHICLE_DOCUMENT"
+  | "VEHICLE_PHOTO"
+  | "RIDE_PHOTO";
+
+export interface CreatePresignedMediaUrlPayload {
+  category: MediaCategory;
+  contentType: string;
+  entityId?: string;
+  fileName: string;
+}
+
+export interface PresignedMediaUrlData {
+  expiresAt: string;
+  fileUrl: string;
+  key: string;
+  uploadUrl: string;
+}
+
+export type CreatePresignedMediaUrlResponse =
+  ApiResponse<PresignedMediaUrlData>;
+
+export interface DeleteMediaPayload {
+  fileUrl: string;
+}
+
+export type DeleteMediaResponse = ApiMessageResponse;
+
 export interface ChecklistUploadedPhoto {
-  imageURL: string;
-  publicCloudID: string;
+  fileUrl: string;
 }
 
 export interface ExteriorChecklistUploadedPhoto
@@ -345,10 +375,11 @@ export interface SubmitDriverPhotoChecklistPayload {
 }
 
 export interface ChecklistRideImage {
+  fileUrl?: string;
   id: string;
-  publicId: string;
+  key?: string;
   type: string;
-  url: string;
+  url?: string;
 }
 
 export interface ChecklistStepResponseData {

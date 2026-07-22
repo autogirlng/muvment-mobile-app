@@ -21,8 +21,14 @@ import {
   createEmptyChecklistPhoto,
   isChecklistPhotoUploaded,
   toChecklistUploadedPhoto,
+  type ChecklistPhotoState,
 } from '../../src/utils/checklistPhotos';
-import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
+import {
+  CHECKLIST_UPLOAD_FAILED_MESSAGE,
+  deleteChecklistPhoto,
+  deleteChecklistPhotoBestEffort,
+  uploadChecklistPhoto,
+} from '../../src/utils/mediaUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
 type VehicleHealthPhotoKey =
@@ -56,7 +62,25 @@ export default function ChecklistStep4Screen() {
       return;
     }
 
-    const photoUri = await capturePhoto();
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    const currentPhoto = photos[field];
+    const previousFileUrl = isChecklistPhotoUploaded(currentPhoto)
+      ? currentPhoto.fileUrl
+      : undefined;
+    const photoUri =
+      currentPhoto.status === 'failed' && currentPhoto.localUri
+        ? currentPhoto.localUri
+        : await capturePhoto();
 
     if (!photoUri) {
       return;
@@ -76,6 +100,7 @@ export default function ChecklistStep4Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         `vehicle-health-${uploadType}`,
+        activeTripId,
       );
 
       setPhotos(prev => ({
@@ -86,9 +111,11 @@ export default function ChecklistStep4Screen() {
           status: 'uploaded',
         },
       }));
+
+      void deleteChecklistPhotoBestEffort(previousFileUrl);
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload this photo.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setPhotos(prev => ({
         ...prev,
@@ -109,8 +136,40 @@ export default function ChecklistStep4Screen() {
     }
   };
 
-  const handleRemovePhoto = (field: VehicleHealthPhotoKey) => {
+  const handleRemovePhoto = async (field: VehicleHealthPhotoKey) => {
+    const currentPhoto = photos[field];
+
+    if (isChecklistPhotoUploaded(currentPhoto)) {
+      try {
+        await deleteChecklistPhoto(currentPhoto.fileUrl);
+      } catch {
+        Toast.show({
+          type: 'errorToast',
+          text1: 'Remove failed',
+          text2: 'Please try removing the photo again.',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+    }
+
     setPhotos(prev => ({ ...prev, [field]: createEmptyChecklistPhoto() }));
+  };
+
+  const getPhotoSubtitle = (
+    photo: ChecklistPhotoState,
+    fallback: string,
+  ) => {
+    if (photo.status === 'uploading') {
+      return 'Uploading...';
+    }
+
+    if (photo.status === 'failed') {
+      return photo.errorMessage ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
+    }
+
+    return fallback;
   };
 
   // Next is enabled only if all three photos are provided
@@ -202,7 +261,7 @@ export default function ChecklistStep4Screen() {
 
           <PhotoUploadCard
             title="Oil Level"
-            subtitle={photos.oilLevel.status === 'uploading' ? 'Uploading...' : 'Dipstick showing oil level between min/max'}
+            subtitle={getPhotoSubtitle(photos.oilLevel, 'Dipstick showing oil level between min/max')}
             imageUri={photos.oilLevel.localUri}
             onPress={() => handleImagePick('oilLevel')}
             onRemove={() => handleRemovePhoto('oilLevel')}
@@ -210,7 +269,7 @@ export default function ChecklistStep4Screen() {
           
           <PhotoUploadCard
             title="Coolant Level"
-            subtitle={photos.coolantLevel.status === 'uploading' ? 'Uploading...' : 'Reservoir showing fluid level'}
+            subtitle={getPhotoSubtitle(photos.coolantLevel, 'Reservoir showing fluid level')}
             imageUri={photos.coolantLevel.localUri}
             onPress={() => handleImagePick('coolantLevel')}
             onRemove={() => handleRemovePhoto('coolantLevel')}
@@ -218,7 +277,7 @@ export default function ChecklistStep4Screen() {
           
           <PhotoUploadCard
             title="Safety Equipment"
-            subtitle={photos.safetyEquipment.status === 'uploading' ? 'Uploading...' : 'First Aid Kit, Warning Triangle, Fire Extinguisher'}
+            subtitle={getPhotoSubtitle(photos.safetyEquipment, 'First Aid Kit, Warning Triangle, Fire Extinguisher')}
             imageUri={photos.safetyEquipment.localUri}
             onPress={() => handleImagePick('safetyEquipment')}
             onRemove={() => handleRemovePhoto('safetyEquipment')}

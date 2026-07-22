@@ -24,7 +24,12 @@ import {
   toChecklistUploadedPhoto,
   type ChecklistPhotoState,
 } from '../../src/utils/checklistPhotos';
-import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
+import {
+  CHECKLIST_UPLOAD_FAILED_MESSAGE,
+  deleteChecklistPhoto,
+  deleteChecklistPhotoBestEffort,
+  uploadChecklistPhoto,
+} from '../../src/utils/mediaUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
 type RequiredExteriorPhotoId = 'back' | 'front' | 'leftSide' | 'rightSide';
@@ -58,7 +63,25 @@ export default function PostRideChecklistStep2Screen() {
       return;
     }
 
-    const photoUri = await capturePhoto();
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    const currentPhoto = requiredPhotos[field];
+    const previousFileUrl = isChecklistPhotoUploaded(currentPhoto)
+      ? currentPhoto.fileUrl
+      : undefined;
+    const photoUri =
+      currentPhoto.status === 'failed' && currentPhoto.localUri
+        ? currentPhoto.localUri
+        : await capturePhoto();
 
     if (!photoUri) {
       return;
@@ -78,6 +101,7 @@ export default function PostRideChecklistStep2Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         `post-exterior-${uploadType}`,
+        activeTripId,
       );
 
       setRequiredPhotos((currentPhotos) => ({
@@ -88,9 +112,11 @@ export default function PostRideChecklistStep2Screen() {
           status: 'uploaded',
         },
       }));
+
+      void deleteChecklistPhotoBestEffort(previousFileUrl);
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload this photo.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setRequiredPhotos((currentPhotos) => ({
         ...currentPhotos,
@@ -111,7 +137,24 @@ export default function PostRideChecklistStep2Screen() {
     }
   };
 
-  const handleRemoveRequired = (field: RequiredExteriorPhotoId) => {
+  const handleRemoveRequired = async (field: RequiredExteriorPhotoId) => {
+    const currentPhoto = requiredPhotos[field];
+
+    if (isChecklistPhotoUploaded(currentPhoto)) {
+      try {
+        await deleteChecklistPhoto(currentPhoto.fileUrl);
+      } catch {
+        Toast.show({
+          type: 'errorToast',
+          text1: 'Remove failed',
+          text2: 'Please try removing the photo again.',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+    }
+
     setRequiredPhotos((currentPhotos) => ({
       ...currentPhotos,
       [field]: createEmptyChecklistPhoto(),
@@ -120,6 +163,17 @@ export default function PostRideChecklistStep2Screen() {
 
   const handleAddDamagePhoto = async () => {
     if (damagePhotos.length >= damageConfig.maxPhotos) {
+      return;
+    }
+
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
       return;
     }
 
@@ -143,6 +197,7 @@ export default function PostRideChecklistStep2Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         `post-exterior-damage-${nextIndex + 1}`,
+        activeTripId,
       );
 
       setDamagePhotos((currentPhotos) => currentPhotos.map((photo, index) => (
@@ -156,7 +211,7 @@ export default function PostRideChecklistStep2Screen() {
       )));
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload this damage photo.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setDamagePhotos((currentPhotos) => currentPhotos.map((photo, index) => (
         index === nextIndex
@@ -183,7 +238,25 @@ export default function PostRideChecklistStep2Screen() {
       return;
     }
 
-    const photoUri = await capturePhoto();
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    const currentPhoto = damagePhotos[indexToUpdate];
+    const previousFileUrl = currentPhoto && isChecklistPhotoUploaded(currentPhoto)
+      ? currentPhoto.fileUrl
+      : undefined;
+    const photoUri =
+      currentPhoto?.status === 'failed' && currentPhoto.localUri
+        ? currentPhoto.localUri
+        : await capturePhoto();
 
     if (!photoUri) {
       return;
@@ -202,6 +275,7 @@ export default function PostRideChecklistStep2Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         `post-exterior-damage-${indexToUpdate + 1}`,
+        activeTripId,
       );
 
       setDamagePhotos((currentPhotos) => currentPhotos.map((photo, index) => (
@@ -213,9 +287,11 @@ export default function PostRideChecklistStep2Screen() {
             }
           : photo
       )));
+
+      void deleteChecklistPhotoBestEffort(previousFileUrl);
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload this damage photo.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setDamagePhotos((currentPhotos) => currentPhotos.map((photo, index) => (
         index === indexToUpdate
@@ -237,10 +313,42 @@ export default function PostRideChecklistStep2Screen() {
     }
   };
 
-  const handleRemoveDamagePhoto = (indexToRemove: number) => {
+  const handleRemoveDamagePhoto = async (indexToRemove: number) => {
+    const currentPhoto = damagePhotos[indexToRemove];
+
+    if (currentPhoto && isChecklistPhotoUploaded(currentPhoto)) {
+      try {
+        await deleteChecklistPhoto(currentPhoto.fileUrl);
+      } catch {
+        Toast.show({
+          type: 'errorToast',
+          text1: 'Remove failed',
+          text2: 'Please try removing the photo again.',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+    }
+
     setDamagePhotos((currentPhotos) => (
       currentPhotos.filter((_, index) => index !== indexToRemove)
     ));
+  };
+
+  const getPhotoSubtitle = (
+    photo: ChecklistPhotoState,
+    fallback: string,
+  ) => {
+    if (photo.status === 'uploading') {
+      return 'Uploading...';
+    }
+
+    if (photo.status === 'failed') {
+      return photo.errorMessage ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
+    }
+
+    return fallback;
   };
 
   const requiredPhotoList = Object.values(requiredPhotos);
@@ -364,7 +472,7 @@ export default function PostRideChecklistStep2Screen() {
               <PhotoUploadCard
                 key={photo.id}
                 title={photo.title}
-                subtitle={photoState.status === 'uploading' ? 'Uploading...' : photo.subtitle}
+                subtitle={getPhotoSubtitle(photoState, photo.subtitle)}
                 imageUri={photoState.localUri}
                 onPress={() => uploadRequiredPhoto(photoId)}
                 onRemove={() => handleRemoveRequired(photoId)}
@@ -380,7 +488,7 @@ export default function PostRideChecklistStep2Screen() {
             <PhotoUploadCard
               key={`damage-${index}`}
               title={damageConfig.title}
-              subtitle={photo.status === 'uploading' ? 'Uploading...' : damageConfig.subtitle}
+              subtitle={getPhotoSubtitle(photo, damageConfig.subtitle)}
               imageUri={photo.localUri}
               onPress={() => handleRetakeDamagePhoto(index)}
               onRemove={() => handleRemoveDamagePhoto(index)}

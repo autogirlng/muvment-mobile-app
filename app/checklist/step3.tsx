@@ -23,8 +23,14 @@ import {
   createEmptyChecklistPhoto,
   isChecklistPhotoUploaded,
   toChecklistUploadedPhoto,
+  type ChecklistPhotoState,
 } from '../../src/utils/checklistPhotos';
-import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
+import {
+  CHECKLIST_UPLOAD_FAILED_MESSAGE,
+  deleteChecklistPhoto,
+  deleteChecklistPhotoBestEffort,
+  uploadChecklistPhoto,
+} from '../../src/utils/mediaUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
 type InteriorPhotoKey =
@@ -75,7 +81,25 @@ export default function ChecklistStep3Screen() {
       return;
     }
 
-    const photoUri = await capturePhoto();
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    const currentPhoto = photos[field];
+    const previousFileUrl = isChecklistPhotoUploaded(currentPhoto)
+      ? currentPhoto.fileUrl
+      : undefined;
+    const photoUri =
+      currentPhoto.status === 'failed' && currentPhoto.localUri
+        ? currentPhoto.localUri
+        : await capturePhoto();
 
     if (!photoUri) return;
 
@@ -93,6 +117,7 @@ export default function ChecklistStep3Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         `interior-${uploadType}`,
+        activeTripId,
       );
 
       setPhotos(prev => ({
@@ -103,9 +128,11 @@ export default function ChecklistStep3Screen() {
           status: 'uploaded',
         },
       }));
+
+      void deleteChecklistPhotoBestEffort(previousFileUrl);
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload this photo.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setPhotos(prev => ({
         ...prev,
@@ -128,12 +155,38 @@ export default function ChecklistStep3Screen() {
 
   };
 
-  const handleRemovePhoto = (field: InteriorPhotoKey) => {
+  const handleRemovePhoto = async (field: InteriorPhotoKey) => {
+    const currentPhoto = photos[field];
+
+    if (isChecklistPhotoUploaded(currentPhoto)) {
+      try {
+        await deleteChecklistPhoto(currentPhoto.fileUrl);
+      } catch {
+        Toast.show({
+          type: 'errorToast',
+          text1: 'Remove failed',
+          text2: 'Please try removing the photo again.',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+    }
+
     setPhotos(prev => ({ ...prev, [field]: createEmptyChecklistPhoto() }));
   };
 
-  const getPhotoSubtitle = (field: InteriorPhotoKey, subtitle: string) =>
-    photos[field].status === 'uploading' ? 'Uploading...' : subtitle;
+  const getPhotoSubtitle = (photo: ChecklistPhotoState, subtitle: string) => {
+    if (photo.status === 'uploading') {
+      return 'Uploading...';
+    }
+
+    if (photo.status === 'failed') {
+      return photo.errorMessage ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
+    }
+
+    return subtitle;
+  };
 
   // Next is enabled if all photos are provided and the readings are valid.
   const photoList = Object.values(photos);
@@ -239,7 +292,7 @@ export default function ChecklistStep3Screen() {
           {/* 1. Dashboard Upload */}
           <PhotoUploadCard
             title="Dashboard"
-            subtitle={getPhotoSubtitle('dashboard', 'Must show odometer AND fuel gauge clearly')}
+            subtitle={getPhotoSubtitle(photos.dashboard, 'Must show odometer AND fuel gauge clearly')}
             imageUri={photos.dashboard.localUri}
             onPress={handleDashboardPick}
             onRemove={() => handleRemovePhoto('dashboard')}
@@ -289,7 +342,7 @@ export default function ChecklistStep3Screen() {
           {/* Remaining Interior Photos */}
           <PhotoUploadCard
             title="Driver Side"
-            subtitle={getPhotoSubtitle('driverSide', 'Seat, door panel, floor area')}
+            subtitle={getPhotoSubtitle(photos.driverSide, 'Seat, door panel, floor area')}
             imageUri={photos.driverSide.localUri}
             onPress={() => handleImagePick('driverSide')}
             onRemove={() => handleRemovePhoto('driverSide')}
@@ -297,7 +350,7 @@ export default function ChecklistStep3Screen() {
           
           <PhotoUploadCard
             title="Passenger Side"
-            subtitle={getPhotoSubtitle('passengerSide', 'Seat, floor, glove box')}
+            subtitle={getPhotoSubtitle(photos.passengerSide, 'Seat, floor, glove box')}
             imageUri={photos.passengerSide.localUri}
             onPress={() => handleImagePick('passengerSide')}
             onRemove={() => handleRemovePhoto('passengerSide')}
@@ -305,7 +358,7 @@ export default function ChecklistStep3Screen() {
           
           <PhotoUploadCard
             title="Rear Seats"
-            subtitle={getPhotoSubtitle('rearSeats', 'Back seat condition, floor')}
+            subtitle={getPhotoSubtitle(photos.rearSeats, 'Back seat condition, floor')}
             imageUri={photos.rearSeats.localUri}
             onPress={() => handleImagePick('rearSeats')}
             onRemove={() => handleRemovePhoto('rearSeats')}
@@ -313,7 +366,7 @@ export default function ChecklistStep3Screen() {
           
           <PhotoUploadCard
             title="Boot/Trunk"
-            subtitle={getPhotoSubtitle('boot', 'Trunk space, spare tire area')}
+            subtitle={getPhotoSubtitle(photos.boot, 'Trunk space, spare tire area')}
             imageUri={photos.boot.localUri}
             onPress={() => handleImagePick('boot')}
             onRemove={() => handleRemovePhoto('boot')}

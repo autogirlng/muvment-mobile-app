@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   AppState,
   Linking,
+  Platform,
   View, 
   Text, 
   TouchableOpacity, 
@@ -26,9 +27,13 @@ import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { SettingsToggle } from '../../src/components/common/SettingsToggle';
 import { useAuthSession } from '../../src/context/AuthSessionContext';
 
-const DASHBOARD_TAB_BAR_HEIGHT = 85;
+const ANDROID_DASHBOARD_TAB_BAR_BASE_HEIGHT = 70;
+const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_MIN = 20;
+const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA = 8;
+const IOS_DASHBOARD_TAB_BAR_HEIGHT = 85;
 const SIGN_OUT_BUTTON_HEIGHT = 56;
 const SIGN_OUT_BUTTON_GAP = 24;
+const IOS_SIGN_OUT_BOTTOM_ADJUSTMENT = -16;
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
@@ -124,8 +129,16 @@ export default function SettingsScreen() {
     : pushNotifications
       ? 'Trip alerts are enabled'
       : 'Trip alerts are off';
+  const dashboardTabBarHeight =
+    Platform.OS === 'android'
+      ? ANDROID_DASHBOARD_TAB_BAR_BASE_HEIGHT +
+        Math.max(insets.bottom, ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_MIN) +
+        ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA
+      : IOS_DASHBOARD_TAB_BAR_HEIGHT;
+  const platformBottomAdjustment =
+    Platform.OS === 'ios' ? IOS_SIGN_OUT_BOTTOM_ADJUSTMENT : 0;
   const signOutBottomOffset =
-    DASHBOARD_TAB_BAR_HEIGHT + Math.max(insets.bottom, 16);
+    dashboardTabBarHeight + Math.max(insets.bottom, 16) + platformBottomAdjustment;
   const scrollBottomPadding =
     signOutBottomOffset + SIGN_OUT_BUTTON_HEIGHT + SIGN_OUT_BUTTON_GAP;
 

@@ -8,9 +8,8 @@ export type ChecklistPhotoUploadStatus =
 
 export interface ChecklistPhotoState {
   errorMessage?: string;
-  imageURL?: string;
+  fileUrl?: string;
   localUri: string | null;
-  publicCloudID?: string;
   status: ChecklistPhotoUploadStatus;
 }
 
@@ -22,11 +21,10 @@ export const createEmptyChecklistPhoto = (): ChecklistPhotoState => ({
 export const isChecklistPhotoUploaded = (
   photo: ChecklistPhotoState,
 ): photo is ChecklistPhotoState & Required<
-  Pick<ChecklistPhotoState, "imageURL" | "publicCloudID">
+  Pick<ChecklistPhotoState, "fileUrl">
 > =>
   photo.status === "uploaded" &&
-  Boolean(photo.imageURL) &&
-  Boolean(photo.publicCloudID);
+  Boolean(photo.fileUrl);
 
 export const toChecklistUploadedPhoto = (
   photo: ChecklistPhotoState,
@@ -36,7 +34,6 @@ export const toChecklistUploadedPhoto = (
   }
 
   return {
-    imageURL: photo.imageURL,
-    publicCloudID: photo.publicCloudID,
+    fileUrl: photo.fileUrl,
   };
 };

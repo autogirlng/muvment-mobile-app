@@ -23,8 +23,14 @@ import {
   createEmptyChecklistPhoto,
   isChecklistPhotoUploaded,
   toChecklistUploadedPhoto,
+  type ChecklistPhotoState,
 } from '../../src/utils/checklistPhotos';
-import { uploadChecklistPhoto } from '../../src/utils/cloudinaryUpload';
+import {
+  CHECKLIST_UPLOAD_FAILED_MESSAGE,
+  deleteChecklistPhoto,
+  deleteChecklistPhotoBestEffort,
+  uploadChecklistPhoto,
+} from '../../src/utils/mediaUpload';
 import { capturePhoto } from '../../src/utils/deviceActions';
 
 type RequiredInteriorPhotoId =
@@ -73,7 +79,25 @@ export default function PostRideChecklistStep3Screen() {
       return;
     }
 
-    const photoUri = await capturePhoto();
+    if (!activeTripId) {
+      Toast.show({
+        type: 'errorToast',
+        text1: 'Trip unavailable',
+        text2: 'Please go back and select the trip again.',
+        position: 'top',
+        topOffset: 60,
+      });
+      return;
+    }
+
+    const currentPhoto = photos[field];
+    const previousFileUrl = isChecklistPhotoUploaded(currentPhoto)
+      ? currentPhoto.fileUrl
+      : undefined;
+    const photoUri =
+      currentPhoto.status === 'failed' && currentPhoto.localUri
+        ? currentPhoto.localUri
+        : await capturePhoto();
 
     if (!photoUri) return;
 
@@ -91,6 +115,7 @@ export default function PostRideChecklistStep3Screen() {
       const uploadResult = await uploadChecklistPhoto(
         photoUri,
         `post-interior-${uploadType}`,
+        activeTripId,
       );
 
       setPhotos((currentPhotos) => ({
@@ -101,9 +126,11 @@ export default function PostRideChecklistStep3Screen() {
           status: 'uploaded',
         },
       }));
+
+      void deleteChecklistPhotoBestEffort(previousFileUrl);
     } catch (error) {
       const message =
-        getApiErrorMessage(error) ?? 'Unable to upload this photo.';
+        getApiErrorMessage(error) ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
 
       setPhotos((currentPhotos) => ({
         ...currentPhotos,
@@ -126,11 +153,43 @@ export default function PostRideChecklistStep3Screen() {
 
   };
 
-  const handleRemovePhoto = (field: RequiredInteriorPhotoId) => {
+  const handleRemovePhoto = async (field: RequiredInteriorPhotoId) => {
+    const currentPhoto = photos[field];
+
+    if (isChecklistPhotoUploaded(currentPhoto)) {
+      try {
+        await deleteChecklistPhoto(currentPhoto.fileUrl);
+      } catch {
+        Toast.show({
+          type: 'errorToast',
+          text1: 'Remove failed',
+          text2: 'Please try removing the photo again.',
+          position: 'top',
+          topOffset: 60,
+        });
+        return;
+      }
+    }
+
     setPhotos((currentPhotos) => ({
       ...currentPhotos,
       [field]: createEmptyChecklistPhoto(),
     }));
+  };
+
+  const getPhotoSubtitle = (
+    photo: ChecklistPhotoState,
+    fallback: string,
+  ) => {
+    if (photo.status === 'uploading') {
+      return 'Uploading...';
+    }
+
+    if (photo.status === 'failed') {
+      return photo.errorMessage ?? CHECKLIST_UPLOAD_FAILED_MESSAGE;
+    }
+
+    return fallback;
   };
 
   const photoList = Object.values(photos);
@@ -231,7 +290,7 @@ export default function PostRideChecklistStep3Screen() {
 
           <PhotoUploadCard
             title={dashboardRequirement.title}
-            subtitle={photos.dashboard.status === 'uploading' ? 'Uploading...' : dashboardRequirement.subtitle}
+            subtitle={getPhotoSubtitle(photos.dashboard, dashboardRequirement.subtitle)}
             imageUri={photos.dashboard.localUri}
             onPress={handleDashboardPick}
             onRemove={() => handleRemovePhoto('dashboard')}
@@ -285,7 +344,7 @@ export default function PostRideChecklistStep3Screen() {
               <PhotoUploadCard
                 key={photo.id}
                 title={photo.title}
-                subtitle={photoState.status === 'uploading' ? 'Uploading...' : photo.subtitle}
+                subtitle={getPhotoSubtitle(photoState, photo.subtitle)}
                 imageUri={photoState.localUri}
                 onPress={() => handleImagePick(photoId)}
                 onRemove={() => handleRemovePhoto(photoId)}
