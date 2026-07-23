@@ -2,10 +2,21 @@ import type {
   DriverTrip,
   DriverTripStatus,
 } from "../api/types";
-import type { BadgeProps } from "../components/common/TripCard";
+
+export type DriverTripBadgeType = "booking" | "owner" | "status";
+
+export interface DriverTripBadge {
+  label: string;
+  type?: DriverTripBadgeType;
+}
+
+export interface DriverTripBadgeStyle {
+  bg: string;
+  text: string;
+}
 
 export interface DriverTripCardModel {
-  badges: BadgeProps[];
+  badges: DriverTripBadge[];
   clientName: string;
   id: string;
   location: string;
@@ -78,6 +89,9 @@ const getFallbackValue = (value: string | undefined, fallback: string) =>
 const normalizeBookingText = (value?: string | null) =>
   compact(value)?.toLowerCase().replace(/[_-]+/g, " ");
 
+const normalizeBadgeText = (value?: string | null) =>
+  compact(value)?.toUpperCase().replace(/[_-]+/g, " ");
+
 const getBookingDurationHours = (value?: string | null) => {
   const normalizedValue = normalizeBookingText(value);
 
@@ -85,9 +99,9 @@ const getBookingDurationHours = (value?: string | null) => {
     return undefined;
   }
 
-  const hourMatch = normalizedValue.match(
-    /^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)?$/,
-  );
+  const hourMatch =
+    normalizedValue.match(/^(\d+(?:\.\d+)?)$/) ??
+    normalizedValue.match(/\b(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/);
 
   if (!hourMatch?.[1]) {
     return undefined;
@@ -114,6 +128,86 @@ export const isUnaccommodatedHourBookingLabel = (value?: string | null) => {
     hours !== 12 &&
     hours !== 24
   );
+};
+
+const COMPANY_BADGE_STYLE = { bg: "bg-[#2D3192]", text: "text-white" };
+const HOST_BADGE_STYLE = { bg: "bg-[#ECFDF3]", text: "text-[#027A48]" };
+const UNACCOMMODATED_TIME_BADGE_STYLE = {
+  bg: "bg-[#FEF3C7]",
+  text: "text-[#92400E]",
+};
+
+export const getDriverTripBadgeStyle = (
+  label: string,
+  type?: DriverTripBadgeType,
+): DriverTripBadgeStyle => {
+  const normalizedLabel = normalizeBadgeText(label);
+
+  if (type === "booking" && normalizedLabel) {
+    switch (normalizedLabel) {
+      case "AIRPORT":
+        return { bg: "bg-[#CFFAFE]", text: "text-[#0891B2]" };
+      case "STANDARD":
+        return { bg: "bg-[#E0EAFF]", text: "text-[#3538CD]" };
+      case "FULL DAY RENTAL":
+        return { bg: "bg-[#F4EBFF]", text: "text-[#6941C6]" };
+      default:
+        return UNACCOMMODATED_TIME_BADGE_STYLE;
+    }
+  }
+
+  if (type === "owner" && normalizedLabel) {
+    if (
+      normalizedLabel === "COMPANY" ||
+      normalizedLabel.includes("AUTOGIRL")
+    ) {
+      return COMPANY_BADGE_STYLE;
+    }
+
+    if (normalizedLabel === "CUSTOMER") {
+      return { bg: "bg-[#101928]", text: "text-[#F5A623]" };
+    }
+
+    return HOST_BADGE_STYLE;
+  }
+
+  if (isUnaccommodatedHourBookingLabel(label)) {
+    return UNACCOMMODATED_TIME_BADGE_STYLE;
+  }
+
+  switch (normalizedLabel) {
+    case "ONGOING":
+      return { bg: "bg-[#12B76A]", text: "text-white" };
+    case "FULL DAY RENTAL":
+      return { bg: "bg-[#F4EBFF]", text: "text-[#6941C6]" };
+    case "CUSTOMER":
+      return { bg: "bg-[#101928]", text: "text-[#F5A623]" };
+    case "NOT STARTED":
+      return { bg: "bg-[#F79009]", text: "text-white" };
+    case "CHECKED IN":
+      return { bg: "bg-[#12B76A]", text: "text-white" };
+    case "STANDARD":
+      return { bg: "bg-[#E0EAFF]", text: "text-[#3538CD]" };
+    case "MAINTENANCE":
+      return { bg: "bg-[#E4E7EC]", text: "text-[#475367]" };
+    case "AWAITING PICKUP":
+      return { bg: "bg-[#F97316]", text: "text-white" };
+    case "RUNNING LATE":
+      return { bg: "bg-[#D92D20]", text: "text-white" };
+    case "COMPANY":
+    case "AUTOGIRL":
+      return COMPANY_BADGE_STYLE;
+    case "HOST":
+      return HOST_BADGE_STYLE;
+    case "COMPLETE":
+      return { bg: "bg-[#667185]", text: "text-white" };
+    case "AIRPORT":
+      return { bg: "bg-[#CFFAFE]", text: "text-[#0891B2]" };
+    case "CANCELLED":
+      return { bg: "bg-[#D92D20]", text: "text-white" };
+    default:
+      return { bg: "bg-[#F2F4F7]", text: "text-[#475367]" };
+  }
 };
 
 export const getDriverTripBookingTimerType = (
@@ -232,11 +326,28 @@ export const toDriverTripCardModel = (
       : undefined,
     durationLabel ? `(${durationLabel})` : undefined,
   ].filter(Boolean).join(" ");
-  const badges = [
-    status ? { label: getDriverTripStatusLabel(status) } : undefined,
-    bookingTypeName ? { label: bookingTypeName } : undefined,
-    driverOwnerType ? { label: driverOwnerType } : undefined,
-  ].filter((badge): badge is BadgeProps => Boolean(badge));
+  const badges: DriverTripBadge[] = [];
+
+  if (status) {
+    badges.push({
+      label: getDriverTripStatusLabel(status),
+      type: "status",
+    });
+  }
+
+  if (bookingTypeName) {
+    badges.push({
+      label: bookingTypeName,
+      type: "booking",
+    });
+  }
+
+  if (driverOwnerType) {
+    badges.push({
+      label: driverOwnerType,
+      type: "owner",
+    });
+  }
 
   return {
     badges,

@@ -38,22 +38,27 @@ const IOS_SIGN_OUT_BOTTOM_OFFSET_EXTRA = 16;
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
-  iconName: keyof typeof Feather.glyphMap;
-  title: string;
+  disabled?: boolean;
   description: string;
-  onPress: () => void;
+  iconName: keyof typeof Feather.glyphMap;
+  onPress?: () => void;
+  title: string;
 }
 
 const SettingsActionRow = ({
-  iconName,
-  title,
+  disabled = false,
   description,
+  iconName,
   onPress,
+  title,
 }: SettingsActionRowProps) => (
   <TouchableOpacity
     activeOpacity={0.8}
+    disabled={disabled}
     onPress={onPress}
-    className="flex-row items-center justify-between px-6 py-4"
+    className={`flex-row items-center justify-between px-6 py-4 ${
+      disabled ? 'opacity-50' : ''
+    }`}
   >
     <View className="flex-row items-center flex-1 pr-4">
       <Feather name={iconName} size={20} color="#475367" />
@@ -66,7 +71,7 @@ const SettingsActionRow = ({
         </Text>
       </View>
     </View>
-    <Feather name="chevron-right" size={20} color="#98A2B3" />
+    {!disabled && <Feather name="chevron-right" size={20} color="#98A2B3" />}
   </TouchableOpacity>
 );
 
@@ -356,10 +361,10 @@ export default function SettingsScreen() {
           />
 
           <SettingsActionRow
+            disabled
             iconName="file-text"
             title="Employee Terms of Use"
             description="Read driver app terms and conditions"
-            onPress={() => router.push('/terms-of-use')}
           />
 
           <SettingsActionRow

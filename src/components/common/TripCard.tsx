@@ -2,14 +2,13 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
-import { isUnaccommodatedHourBookingLabel } from '../../utils/driverTrips';
-
-export interface BadgeProps {
-  label: string;
-}
+import {
+  getDriverTripBadgeStyle,
+  type DriverTripBadge,
+} from '../../utils/driverTrips';
 
 interface TripCardProps {
-  badges: BadgeProps[];
+  badges: DriverTripBadge[];
   clientName: string;
   location: string;
   vehicle: string;
@@ -17,30 +16,6 @@ interface TripCardProps {
   tripId: string;
   onPress?: () => void;
 }
-
-const getBadgeStyle = (label: string) => {
-  if (isUnaccommodatedHourBookingLabel(label)) {
-    return { bg: 'bg-[#FEF3C7]', text: 'text-[#92400E]' };
-  }
-
-  switch (label.toUpperCase()) {
-    case 'ONGOING': return { bg: 'bg-[#12B76A]', text: 'text-white' };
-    case 'FULL DAY RENTAL': return { bg: 'bg-[#F4EBFF]', text: 'text-[#6941C6]' };
-    case 'CUSTOMER': return { bg: 'bg-[#101928]', text: 'text-[#F5A623]' };
-    case 'NOT STARTED': return { bg: 'bg-[#F79009]', text: 'text-white' };
-    case 'CHECKED IN': return { bg: 'bg-[#12B76A]', text: 'text-white' };
-    case 'STANDARD': return { bg: 'bg-[#E0EAFF]', text: 'text-[#3538CD]' };
-    case 'MAINTENANCE': return { bg: 'bg-[#E4E7EC]', text: 'text-[#475367]' };
-    case 'AWAITING PICKUP': return { bg: 'bg-[#F97316]', text: 'text-white' };
-    case 'RUNNING LATE': return { bg: 'bg-[#D92D20]', text: 'text-white' };
-    case 'COMPANY': return { bg: 'bg-[#2D3192]', text: 'text-white' };
-    // New status badges added below
-    case 'COMPLETE': return { bg: 'bg-[#667185]', text: 'text-white' };
-    case 'AIRPORT': return { bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]' };
-    case 'CANCELLED': return { bg: 'bg-[#D92D20]', text: 'text-white' };
-    default: return { bg: 'bg-[#F2F4F7]', text: 'text-[#475367]' };
-  }
-};
 
 export const TripCard: React.FC<TripCardProps> = ({
   badges,
@@ -59,7 +34,7 @@ export const TripCard: React.FC<TripCardProps> = ({
     >
       <View className="flex-row flex-wrap gap-2 mb-4">
         {badges.map((badge, index) => {
-          const style = getBadgeStyle(badge.label);
+          const style = getDriverTripBadgeStyle(badge.label, badge.type);
           return (
             <View key={index} className={`px-2.5 py-1 rounded-full ${style.bg}`}>
               <Text className={`font-inter font-semibold text-[10px] tracking-wide uppercase ${style.text}`}>

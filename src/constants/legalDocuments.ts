@@ -2,7 +2,6 @@ export const privacyPolicyDocument = {
   body: `Muvment Privacy Policy
 Operated by Autogirl Limited | muvment.ng
 Last updated: March 31, 2026
-Effective date: [insert date]
 
 1. Who we are
 Muvment is a vehicle mobility marketplace operated by Autogirl Limited ("Muvment", "we", "us", or "our"). We connect customers with vehicles and professional drivers for hire across our service areas, currently including Lagos, Abuja, Benin City, Enugu, and Port Harcourt in Nigeria, and Accra in Ghana.

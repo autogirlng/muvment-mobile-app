@@ -34,10 +34,10 @@ import type {
 } from '../../src/api/types';
 import { openMapForCoordinates } from '../../src/utils/deviceActions';
 import {
+  getDriverTripBadgeStyle,
   getDriverTripBookingBadgeLabel,
   getDriverTripStatusLabel,
   getDriverTripBookingTimerType,
-  isUnaccommodatedHourBookingLabel,
   type DriverTripBookingTimerType,
 } from '../../src/utils/driverTrips';
 
@@ -250,23 +250,6 @@ const getStatusStyle = (status: string) => {
   }
 };
 
-const getBookingRentalBadgeStyle = (label: string) => {
-  if (isUnaccommodatedHourBookingLabel(label)) {
-    return { bg: 'bg-[#FEF3C7]', text: 'text-[#92400E]' };
-  }
-
-  switch (label.toUpperCase()) {
-    case 'AIRPORT':
-      return { bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]' };
-    case 'STANDARD':
-      return { bg: 'bg-[#E0EAFF]', text: 'text-[#3538CD]' };
-    case 'FULL DAY RENTAL':
-      return { bg: 'bg-[#F4EBFF]', text: 'text-[#6941C6]' };
-    default:
-      return { bg: 'bg-[#F4F3FF]', text: 'text-[#5925DC]' };
-  }
-};
-
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',
   month: 'long',
@@ -461,7 +444,8 @@ export default function TripDetailScreen() {
     itinerary: getTripItinerary(driverTripDetails) ?? stagedTripDetails.itinerary,
   };
   const statusStyle = getStatusStyle(trip.status);
-  const rentalTypeStyle = getBookingRentalBadgeStyle(trip.booking.rentalType);
+  const ownerTypeStyle = getDriverTripBadgeStyle(trip.booking.type, 'owner');
+  const rentalTypeStyle = getDriverTripBadgeStyle(trip.booking.rentalType, 'booking');
   const routeTripId = tripId?.trim() ?? '';
   const timerType = getRideTimerType(rideType, trip.booking.rentalType);
   const timerConfig = getRideTimerConfig(timerType);
@@ -792,8 +776,8 @@ export default function TripDetailScreen() {
         {/* --- BOOKING --- */}
         <SectionHeader title="Booking" />
         <View className="flex-row items-center space-x-2 mb-4">
-          <View className="bg-[#101928] px-2.5 py-1 rounded-full">
-            <Text className="text-[#F5A623] font-inter font-semibold text-[10px] tracking-wide uppercase">
+          <View className={`${ownerTypeStyle.bg} px-2.5 py-1 rounded-full`}>
+            <Text className={`${ownerTypeStyle.text} font-inter font-semibold text-[10px] tracking-wide uppercase`}>
               {trip.booking.type}
             </Text>
           </View>
