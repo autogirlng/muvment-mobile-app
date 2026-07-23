@@ -11,6 +11,13 @@ export type DriverTripStatus =
   | "COMPLETE"
   | "CANCELLED";
 
+export type StandardTripStatus =
+  | "ASSIGNED"
+  | "UPCOMING"
+  | "ONGOING"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export interface ApiResponse<TData> {
   status: ApiStatus;
   message: string;
@@ -213,6 +220,7 @@ export interface DriverTrip {
   createdAt?: string | null;
   tripCustomId?: string | null;
   driverTripStatus?: DriverTripStatus | null;
+  standardTripStatus?: StandardTripStatus | null;
   tripStatus?: DriverTripStatus | null;
   status?: DriverTripStatus | null;
 }
@@ -248,6 +256,7 @@ export interface DriverTripDetails {
   customerName?: string | null;
   customerPhoneNumber?: string | null;
   driverTripStatus?: DriverTripStatus | null;
+  standardTripStatus?: StandardTripStatus | null;
   bookingTypeName?: string | null;
   driverOwnerType?: string | null;
   tripCustomId?: string | null;
@@ -256,7 +265,7 @@ export interface DriverTripDetails {
 export interface DriverTripsQueryParams {
   page?: number;
   size?: number;
-  tripStatus?: DriverTripStatus;
+  tripStatus?: StandardTripStatus;
   search?: string;
   startDate?: string;
   endDate?: string;

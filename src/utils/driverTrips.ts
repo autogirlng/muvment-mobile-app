@@ -1,6 +1,7 @@
 import type {
   DriverTrip,
   DriverTripStatus,
+  StandardTripStatus,
 } from "../api/types";
 
 export type DriverTripBadgeType = "booking" | "owner" | "status";
@@ -50,6 +51,14 @@ const STATUS_LABELS: Record<DriverTripStatus, string> = {
   NOT_STARTED: "NOT STARTED",
   ONGOING: "ONGOING",
   RUNNING_LATE: "RUNNING LATE",
+};
+
+const STANDARD_STATUS_LABELS: Record<StandardTripStatus, string> = {
+  ASSIGNED: "ASSIGNED",
+  CANCELLED: "CANCELLED",
+  COMPLETED: "COMPLETE",
+  ONGOING: "ONGOING",
+  UPCOMING: "UPCOMING",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -274,8 +283,30 @@ export const formatApiDate = (date: Date) => {
 export const getDriverTripStatus = (trip: DriverTrip) =>
   trip.driverTripStatus ?? trip.tripStatus ?? trip.status ?? undefined;
 
+export const getDriverTripStandardStatus = (trip: DriverTrip) =>
+  trip.standardTripStatus ?? undefined;
+
 export const getDriverTripStatusLabel = (status: DriverTripStatus) =>
   STATUS_LABELS[status];
+
+export const getDriverTripStandardStatusLabel = (
+  status: StandardTripStatus,
+) => STANDARD_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+
+const getDriverTripCardStatusLabel = (
+  trip: DriverTrip,
+  fallbackStatus?: DriverTripStatus,
+) => {
+  const standardStatus = getDriverTripStandardStatus(trip);
+
+  if (standardStatus) {
+    return getDriverTripStandardStatusLabel(standardStatus);
+  }
+
+  const driverStatus = getDriverTripStatus(trip) ?? fallbackStatus;
+
+  return driverStatus ? getDriverTripStatusLabel(driverStatus) : undefined;
+};
 
 export const isDriverTripUpcoming = (trip: DriverTrip) => {
   const status = getDriverTripStatus(trip);
@@ -312,7 +343,7 @@ export const toDriverTripCardModel = (
   trip: DriverTrip,
   fallbackStatus?: DriverTripStatus,
 ): DriverTripCardModel => {
-  const status = getDriverTripStatus(trip) ?? fallbackStatus;
+  const statusLabel = getDriverTripCardStatusLabel(trip, fallbackStatus);
   const bookingTypeName = getDriverTripBookingBadgeLabel(trip.bookingTypeName);
   const driverOwnerType = compact(trip.driverOwnerType);
   const vehicleName = compact(trip.vehicleName);
@@ -328,9 +359,9 @@ export const toDriverTripCardModel = (
   ].filter(Boolean).join(" ");
   const badges: DriverTripBadge[] = [];
 
-  if (status) {
+  if (statusLabel) {
     badges.push({
-      label: getDriverTripStatusLabel(status),
+      label: statusLabel,
       type: "status",
     });
   }

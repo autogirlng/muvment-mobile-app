@@ -24,9 +24,11 @@ import { useDriverTrips } from '../../src/api/hooks/useTrips';
 import type {
   DriverTrip,
   DriverTripStatus,
+  StandardTripStatus,
 } from '../../src/api/types';
 import {
   formatApiDate,
+  getDriverTripStandardStatus,
   getDriverTripStatus,
   groupDriverTripsForCards,
   isDriverTripActive,
@@ -39,9 +41,11 @@ const TRIPS_PAGE_SIZE = 50;
 type TripFilter = 'All' | 'Upcoming' | 'Ongoing' | 'Completed' | 'Cancelled';
 type DateFilter = 'Today' | 'Yesterday' | 'Last 7 days' | 'This Month' | null;
 
-const TRIP_STATUS_BY_TAB: Partial<Record<TripFilter, DriverTripStatus>> = {
+const STANDARD_TRIP_STATUS_BY_TAB: Partial<Record<TripFilter, StandardTripStatus>> = {
   Cancelled: 'CANCELLED',
-  Completed: 'COMPLETE',
+  Completed: 'COMPLETED',
+  Ongoing: 'ONGOING',
+  Upcoming: 'UPCOMING',
 };
 
 const addDays = (date: Date, days: number) => {
@@ -101,10 +105,17 @@ const getDateRangeParams = (dateFilter: DateFilter, customDate: Date | null) => 
 };
 
 const matchesActiveTab = (trip: DriverTrip, activeTab: TripFilter) => {
+  const standardTripStatus = getDriverTripStandardStatus(trip);
   const tripStatus = getDriverTripStatus(trip);
 
   if (activeTab === 'All') {
     return true;
+  }
+
+  const expectedStandardStatus = STANDARD_TRIP_STATUS_BY_TAB[activeTab];
+
+  if (standardTripStatus && expectedStandardStatus) {
+    return standardTripStatus === expectedStandardStatus;
   }
 
   if (activeTab === 'Upcoming') {
@@ -115,7 +126,12 @@ const matchesActiveTab = (trip: DriverTrip, activeTab: TripFilter) => {
     return isDriverTripActive(trip);
   }
 
-  const expectedStatus = TRIP_STATUS_BY_TAB[activeTab];
+  const expectedStatus =
+    activeTab === 'Completed'
+      ? 'COMPLETE'
+      : activeTab === 'Cancelled'
+        ? 'CANCELLED'
+        : undefined;
 
   return !tripStatus || tripStatus === expectedStatus;
 };
@@ -141,7 +157,7 @@ export default function TripsScreen() {
   const [customDate, setCustomDate] = useState<Date | null>(null);
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  const selectedTripStatus = TRIP_STATUS_BY_TAB[activeTab];
+  const selectedTripStatus = STANDARD_TRIP_STATUS_BY_TAB[activeTab];
   const dateRangeParams = useMemo(
     () => getDateRangeParams(dateFilter, customDate),
     [customDate, dateFilter],
@@ -216,13 +232,16 @@ export default function TripsScreen() {
     driverTrips.filter((trip) => matchesActiveTab(trip, activeTab))
   ), [activeTab, driverTrips]);
 
-  const fallbackStatus = selectedTripStatus ?? (
+  const fallbackStatus: DriverTripStatus | undefined =
     activeTab === 'Upcoming'
       ? 'NOT_STARTED'
       : activeTab === 'Ongoing'
         ? 'ONGOING'
-        : undefined
-  );
+        : activeTab === 'Completed'
+          ? 'COMPLETE'
+          : activeTab === 'Cancelled'
+            ? 'CANCELLED'
+            : undefined;
 
   const visibleSections = useMemo(() => {
     return groupDriverTripsForCards(visibleTrips, fallbackStatus);
