@@ -6,17 +6,19 @@ interface EmptyStateProps {
   title: string;
   description: string;
   // Make the image prop optional using "?"
-  image?: ImageSourcePropType; 
+  image?: ImageSourcePropType;
+  containerClassName?: string;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ 
   title, 
   description, 
   // Set the default fallback right here in the props
-  image = require('../../../assets/brand/empty.png') 
+  image = require('../../../assets/brand/empty.png'),
+  containerClassName = 'mt-16',
 }) => {
   return (
-    <View className="flex-1 items-center justify-center px-8 mt-16">
+    <View className={`flex-1 items-center justify-center px-8 ${containerClassName}`}>
       <Image 
         source={image} // Now it dynamically uses whatever was passed, or the default
         className="w-48 h-48 mb-6"

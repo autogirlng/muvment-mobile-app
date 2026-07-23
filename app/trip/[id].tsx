@@ -631,6 +631,7 @@ export default function TripDetailScreen() {
         <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
         {renderBackHeader()}
         <EmptyState
+          containerClassName="mt-32"
           title="Trip unavailable"
           description="Missing trip ID. Please go back and select a trip again."
         />
@@ -644,6 +645,7 @@ export default function TripDetailScreen() {
         <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
         {renderBackHeader()}
         <EmptyState
+          containerClassName="mt-32"
           title="Loading trip"
           description="Fetching trip details."
         />
@@ -657,6 +659,7 @@ export default function TripDetailScreen() {
         <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
         {renderBackHeader()}
         <EmptyState
+          containerClassName="mt-32"
           title="Unable to load trip"
           description={tripDetailsErrorMessage ?? "Please check your connection and try again."}
         />
