@@ -37,6 +37,7 @@ import {
   getDriverTripBookingBadgeLabel,
   getDriverTripStatusLabel,
   getDriverTripBookingTimerType,
+  isUnaccommodatedHourBookingLabel,
   type DriverTripBookingTimerType,
 } from '../../src/utils/driverTrips';
 
@@ -249,6 +250,23 @@ const getStatusStyle = (status: string) => {
   }
 };
 
+const getBookingRentalBadgeStyle = (label: string) => {
+  if (isUnaccommodatedHourBookingLabel(label)) {
+    return { bg: 'bg-[#FEF3C7]', text: 'text-[#92400E]' };
+  }
+
+  switch (label.toUpperCase()) {
+    case 'AIRPORT':
+      return { bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]' };
+    case 'STANDARD':
+      return { bg: 'bg-[#E0EAFF]', text: 'text-[#3538CD]' };
+    case 'FULL DAY RENTAL':
+      return { bg: 'bg-[#F4EBFF]', text: 'text-[#6941C6]' };
+    default:
+      return { bg: 'bg-[#F4F3FF]', text: 'text-[#5925DC]' };
+  }
+};
+
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',
   month: 'long',
@@ -443,6 +461,7 @@ export default function TripDetailScreen() {
     itinerary: getTripItinerary(driverTripDetails) ?? stagedTripDetails.itinerary,
   };
   const statusStyle = getStatusStyle(trip.status);
+  const rentalTypeStyle = getBookingRentalBadgeStyle(trip.booking.rentalType);
   const routeTripId = tripId?.trim() ?? '';
   const timerType = getRideTimerType(rideType, trip.booking.rentalType);
   const timerConfig = getRideTimerConfig(timerType);
@@ -778,8 +797,8 @@ export default function TripDetailScreen() {
               {trip.booking.type}
             </Text>
           </View>
-          <View className="bg-[#F4F3FF] px-2.5 py-1 rounded-full ml-2">
-            <Text className="text-[#5925DC] font-inter font-semibold text-[10px] tracking-wide uppercase">
+          <View className={`${rentalTypeStyle.bg} px-2.5 py-1 rounded-full ml-2`}>
+            <Text className={`${rentalTypeStyle.text} font-inter font-semibold text-[10px] tracking-wide uppercase`}>
               {trip.booking.rentalType}
             </Text>
           </View>

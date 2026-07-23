@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
+import { isUnaccommodatedHourBookingLabel } from '../../utils/driverTrips';
+
 export interface BadgeProps {
   label: string;
 }
@@ -17,6 +19,10 @@ interface TripCardProps {
 }
 
 const getBadgeStyle = (label: string) => {
+  if (isUnaccommodatedHourBookingLabel(label)) {
+    return { bg: 'bg-[#FEF3C7]', text: 'text-[#92400E]' };
+  }
+
   switch (label.toUpperCase()) {
     case 'ONGOING': return { bg: 'bg-[#12B76A]', text: 'text-white' };
     case 'FULL DAY RENTAL': return { bg: 'bg-[#F4EBFF]', text: 'text-[#6941C6]' };

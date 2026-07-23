@@ -78,6 +78,44 @@ const getFallbackValue = (value: string | undefined, fallback: string) =>
 const normalizeBookingText = (value?: string | null) =>
   compact(value)?.toLowerCase().replace(/[_-]+/g, " ");
 
+const getBookingDurationHours = (value?: string | null) => {
+  const normalizedValue = normalizeBookingText(value);
+
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  const hourMatch = normalizedValue.match(
+    /^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)?$/,
+  );
+
+  if (!hourMatch?.[1]) {
+    return undefined;
+  }
+
+  const hours = Number(hourMatch[1]);
+
+  return Number.isFinite(hours) && hours > 0 ? hours : undefined;
+};
+
+const formatBookingDurationBadgeLabel = (hours: number) => {
+  const formattedHours = Number.isInteger(hours)
+    ? String(hours)
+    : String(hours).replace(/\.?0+$/, "");
+
+  return `${formattedHours} HOUR${hours === 1 ? "" : "S"}`;
+};
+
+export const isUnaccommodatedHourBookingLabel = (value?: string | null) => {
+  const hours = getBookingDurationHours(value);
+
+  return (
+    hours !== undefined &&
+    hours !== 12 &&
+    hours !== 24
+  );
+};
+
 export const getDriverTripBookingTimerType = (
   value?: string | null,
 ): DriverTripBookingTimerType => {
@@ -120,6 +158,12 @@ export const getDriverTripBookingBadgeLabel = (value?: string | null) => {
     normalizedValue.includes("24")
   ) {
     return "FULL DAY RENTAL";
+  }
+
+  const durationHours = getBookingDurationHours(normalizedValue);
+
+  if (durationHours !== undefined) {
+    return formatBookingDurationBadgeLabel(durationHours);
   }
 
   return compact(value);
