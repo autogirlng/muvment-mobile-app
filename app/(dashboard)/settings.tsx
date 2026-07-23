@@ -376,8 +376,13 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <View
-        className="absolute left-6 right-6"
-        style={{ bottom: signOutBottomOffset }}
+        style={{
+          bottom: signOutBottomOffset,
+          left: 24,
+          position: 'absolute',
+          right: 24,
+          zIndex: 10,
+        }}
       >
         <TouchableOpacity 
           onPress={() => setSignOutModalVisible(true)} // Opens the modal instead of instantly signing out
