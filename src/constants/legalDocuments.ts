@@ -1,12 +1,12 @@
 export const privacyPolicyDocument = {
   body: `Muvment Privacy Policy
 Operated by Autogirl Limited | muvment.ng
-Last updated: [insert date]
+Last updated: March 31, 2026
 Effective date: [insert date]
 
 1. Who we are
 Muvment is a vehicle mobility marketplace operated by Autogirl Limited ("Muvment", "we", "us", or "our"). We connect customers with vehicles and professional drivers for hire across our service areas, currently including Lagos, Abuja, Benin City, Enugu, and Port Harcourt in Nigeria, and Accra in Ghana.
-This policy explains what personal information we collect, why we collect it, how we use and share it, and the choices and rights you have. If you have questions, contact us at [privacy@muvment.ng] or at [registered office address].
+This policy explains what personal information we collect, why we collect it, how we use and share it, and the choices and rights you have. If you have questions, contact us at info@muvment.ng or at 10 Anuoluwapo Close, Opebi, Ikeja, Lagos.
 
 2. Information we collect
 2.1 Information you give us
@@ -74,7 +74,7 @@ Subject to applicable law, including the Nigeria Data Protection Act 2023, you h
 - Withdraw consent where we rely on it, for example for marketing.
 - Ask for a copy of certain information in a portable format.
 - Lodge a complaint with the Nigeria Data Protection Commission, or the relevant authority in your country.
-To exercise any of these rights, contact us at [privacy@muvment.ng]. We will respond within the time required by law.
+To exercise any of these rights, contact us at info@muvment.ng. We will respond within the time required by law.
 
 11. How we protect your information
 We use reasonable technical and organisational measures to protect your information, including encrypted connections, access controls, and authenticated sign-in. No method of transmission or storage is completely secure, so we cannot guarantee absolute security, but we work to protect your information and to respond appropriately if a problem occurs.
@@ -87,9 +87,9 @@ We may update this policy from time to time. When we make material changes, we w
 
 14. Contact us
 Autogirl Limited (Muvment)
-Email: [privacy@muvment.ng]
-Address: [registered office address]
-Phone: [contact phone number]`,
+Email: info@muvment.ng
+Address: 10 Anuoluwapo Close, Opebi, Ikeja, Lagos
+Phone: +234 816 747 4165`,
   title: "Privacy Policy",
 };
 

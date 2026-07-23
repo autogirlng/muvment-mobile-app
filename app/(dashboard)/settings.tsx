@@ -33,7 +33,8 @@ const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA = 8;
 const IOS_DASHBOARD_TAB_BAR_HEIGHT = 85;
 const SIGN_OUT_BUTTON_HEIGHT = 56;
 const SIGN_OUT_BUTTON_GAP = 24;
-const IOS_SIGN_OUT_BOTTOM_ADJUSTMENT = -16;
+const IOS_SIGN_OUT_BOTTOM_OFFSET_MIN = 32;
+const IOS_SIGN_OUT_BOTTOM_OFFSET_EXTRA = 16;
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
@@ -135,10 +136,10 @@ export default function SettingsScreen() {
         Math.max(insets.bottom, ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_MIN) +
         ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA
       : IOS_DASHBOARD_TAB_BAR_HEIGHT;
-  const platformBottomAdjustment =
-    Platform.OS === 'ios' ? IOS_SIGN_OUT_BOTTOM_ADJUSTMENT : 0;
   const signOutBottomOffset =
-    dashboardTabBarHeight + Math.max(insets.bottom, 16) + platformBottomAdjustment;
+    Platform.OS === 'ios'
+      ? Math.max(insets.bottom + IOS_SIGN_OUT_BOTTOM_OFFSET_EXTRA, IOS_SIGN_OUT_BOTTOM_OFFSET_MIN)
+      : dashboardTabBarHeight + Math.max(insets.bottom, 16);
   const scrollBottomPadding =
     signOutBottomOffset + SIGN_OUT_BUTTON_HEIGHT + SIGN_OUT_BUTTON_GAP;
 
