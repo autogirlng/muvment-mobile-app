@@ -53,14 +53,6 @@ const STATUS_LABELS: Record<DriverTripStatus, string> = {
   RUNNING_LATE: "RUNNING LATE",
 };
 
-const STANDARD_STATUS_LABELS: Record<StandardTripStatus, string> = {
-  ASSIGNED: "ASSIGNED",
-  CANCELLED: "CANCELLED",
-  COMPLETED: "COMPLETE",
-  ONGOING: "ONGOING",
-  UPCOMING: "UPCOMING",
-};
-
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   month: "short",
@@ -289,20 +281,10 @@ export const getDriverTripStandardStatus = (trip: DriverTrip) =>
 export const getDriverTripStatusLabel = (status: DriverTripStatus) =>
   STATUS_LABELS[status];
 
-export const getDriverTripStandardStatusLabel = (
-  status: StandardTripStatus,
-) => STANDARD_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
-
 const getDriverTripCardStatusLabel = (
   trip: DriverTrip,
   fallbackStatus?: DriverTripStatus,
 ) => {
-  const standardStatus = getDriverTripStandardStatus(trip);
-
-  if (standardStatus) {
-    return getDriverTripStandardStatusLabel(standardStatus);
-  }
-
   const driverStatus = getDriverTripStatus(trip) ?? fallbackStatus;
 
   return driverStatus ? getDriverTripStatusLabel(driverStatus) : undefined;
