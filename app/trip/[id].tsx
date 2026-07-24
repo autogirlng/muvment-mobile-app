@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import { 
   BackHandler,
+  Platform,
   View, 
   Text, 
   TouchableOpacity, 
@@ -8,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import Toast from 'react-native-toast-message';
@@ -369,6 +371,7 @@ const getTripItinerary = (tripDetails?: DriverTripDetails) => {
 };
 
 export default function TripDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id, stage, rideType, remainingSeconds } = useLocalSearchParams<{
     id?: string;
     stage?: string;
@@ -545,7 +548,13 @@ export default function TripDetailScreen() {
   );
 
   const renderBackHeader = () => (
-    <View className="px-4 pt-2 pb-4 z-10">
+    <View
+      className="px-4 pb-4 z-10"
+      style={{
+        paddingTop:
+          Platform.OS === 'android' ? Math.max(insets.top, 20) + 8 : 8,
+      }}
+    >
       <TouchableOpacity
         onPress={navigateToTrips}
         className="flex-row items-center ml-[-8px]"
