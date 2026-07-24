@@ -39,7 +39,6 @@ const IOS_DASHBOARD_TAB_BAR_HEIGHT = 85;
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
-  destructive?: boolean;
   disabled?: boolean;
   description: string;
   iconName: keyof typeof Feather.glyphMap;
@@ -48,7 +47,6 @@ interface SettingsActionRowProps {
 }
 
 const SettingsActionRow = ({
-  destructive = false,
   disabled = false,
   description,
   iconName,
@@ -56,12 +54,8 @@ const SettingsActionRow = ({
   title,
 }: SettingsActionRowProps) => {
   const theme = useAppTheme();
-  const iconColor = destructive
-    ? '#D92D20'
-    : theme.styles.icon ?? '#475367';
-  const chevronColor = destructive
-    ? '#D92D20'
-    : theme.isDark ? theme.colors.textSubtle : '#98A2B3';
+  const iconColor = theme.styles.icon ?? '#475367';
+  const chevronColor = theme.isDark ? theme.colors.textSubtle : '#98A2B3';
 
   return (
     <TouchableOpacity
@@ -76,18 +70,14 @@ const SettingsActionRow = ({
         <Feather name={iconName} size={20} color={iconColor} />
         <View className="ml-4">
           <Text
-            className={`font-inter font-medium text-base mb-0.5 ${
-              destructive ? 'text-[#D92D20]' : 'text-brand-primary'
-            }`}
-            style={destructive ? undefined : theme.styles.primaryText}
+            className="font-inter font-medium text-base mb-0.5 text-brand-primary"
+            style={theme.styles.primaryText}
           >
             {title}
           </Text>
           <Text
-            className={`font-inter text-sm ${
-              destructive ? 'text-[#D92D20]' : 'text-brand-secondary'
-            }`}
-            style={destructive ? undefined : theme.styles.mutedText}
+            className="font-inter text-sm text-brand-secondary"
+            style={theme.styles.mutedText}
           >
             {description}
           </Text>
@@ -95,6 +85,29 @@ const SettingsActionRow = ({
       </View>
       {!disabled && <Feather name="chevron-right" size={20} color={chevronColor} />}
     </TouchableOpacity>
+  );
+};
+
+const SignOutButton = ({ onPress }: { onPress: () => void }) => {
+  const theme = useAppTheme();
+
+  return (
+    <View className="px-6 mt-4">
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        className="flex-row items-center justify-between bg-white border border-[#E4E7EC] rounded-2xl px-4 h-14 shadow-sm"
+        style={theme.styles.card}
+      >
+        <View className="flex-row items-center">
+          <Feather name="log-out" size={20} color="#D92D20" />
+          <Text className="ml-3 font-inter font-medium text-base text-[#D92D20]">
+            Sign Out
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#D92D20" />
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -468,13 +481,7 @@ export default function SettingsScreen() {
             onPress={reportProblem}
           />
 
-          <SettingsActionRow
-            destructive
-            iconName="log-out"
-            title="Sign Out"
-            description="Sign out of your driver account"
-            onPress={() => setSignOutModalVisible(true)}
-          />
+          <SignOutButton onPress={() => setSignOutModalVisible(true)} />
         </View>
       </ScrollView>
 
