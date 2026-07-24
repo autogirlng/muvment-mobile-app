@@ -5,6 +5,7 @@ import React, {
 } from 'react';
 import { 
   ActivityIndicator,
+  Platform,
   View, 
   Text, 
   SectionList,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
@@ -122,6 +124,7 @@ const groupNotifications = (
 };
 
 export default function NotificationsScreen() {
+  const insets = useSafeAreaInsets();
   const notificationsQuery = useUserNotifications();
   const markNotificationRead = useMarkNotificationRead();
   const markAllNotificationsRead = useMarkAllNotificationsRead();
@@ -212,7 +215,13 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]">
       <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
-      <View className="px-6 pt-2 pb-4">
+      <View
+        className="px-6 pb-4"
+        style={{
+          paddingTop:
+            Platform.OS === 'android' ? Math.max(insets.top, 20) + 8 : 8,
+        }}
+      >
         <CustomBack color="#1D2739" className="mb-4" />
         <View className="flex-row items-center justify-between">
           <Text className="text-3xl font-inter font-bold text-[#000000]">
