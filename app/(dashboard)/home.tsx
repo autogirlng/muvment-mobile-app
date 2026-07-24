@@ -1,5 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useCallback } from 'react';
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -61,12 +67,32 @@ export default function HomeScreen() {
     ? 'Loading...'
     : getUserDisplayName(currentUser);
   const driverInitials = getUserInitials(currentUser);
+  const isRefreshing =
+    currentUserQuery.isRefetching ||
+    driverTripStatisticsQuery.isRefetching ||
+    driverTripsQuery.isRefetching;
+  const handleRefresh = useCallback(() => {
+    void Promise.all([
+      currentUserQuery.refetch(),
+      driverTripStatisticsQuery.refetch(),
+      driverTripsQuery.refetch(),
+    ]);
+  }, [currentUserQuery, driverTripStatisticsQuery, driverTripsQuery]);
 
   return (
     <View className="flex-1 bg-[#FAFAFA]">
       <AppStatusBar style="light" backgroundColor="#1D2739" />
       
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }} bounces={false}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor="#1D2739"
+          />
+        }
+      >
         
         {/* Curved Gradient Header */}
         <LinearGradient

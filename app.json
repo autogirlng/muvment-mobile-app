@@ -25,7 +25,8 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "package": "com.anonymous.muvmentdriver"
     },
@@ -46,6 +47,7 @@
           "locationWhenInUsePermission": "Allow Muvment Driver to use your location for trip navigation."
         }
       ],
+      "expo-notifications",
       "expo-font"
     ],
     "extra": {

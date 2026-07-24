@@ -26,6 +26,10 @@ import { AppStatusBar } from '../../src/components/common/AppStatusBar';
 import { ConfirmationModal } from '../../src/components/common/ConfirmModal';
 import { SettingsToggle } from '../../src/components/common/SettingsToggle';
 import { useAuthSession } from '../../src/context/AuthSessionContext';
+import {
+  getPushNotificationPermissionStatus,
+  requestPushNotificationPermission,
+} from '../../src/utils/pushNotifications';
 
 const ANDROID_DASHBOARD_TAB_BAR_BASE_HEIGHT = 70;
 const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_MIN = 20;
@@ -33,7 +37,7 @@ const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA = 8;
 const IOS_DASHBOARD_TAB_BAR_HEIGHT = 85;
 const SIGN_OUT_BUTTON_HEIGHT = 56;
 const SIGN_OUT_BUTTON_GAP = 24;
-const IOS_SIGN_OUT_TAB_BAR_GAP = 16;
+const SIGN_OUT_TAB_BAR_GAP = 16;
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
@@ -115,23 +119,41 @@ export default function SettingsScreen() {
     useToggleDriverNotificationSettings();
   const [locationServices, setLocationServices] = useState(false);
   const [isLocationPermissionLoading, setLocationPermissionLoading] = useState(false);
+  const [pushNotificationPermissionStatus, setPushNotificationPermissionStatus] =
+    useState<string>();
+  const [isPushNotificationPermissionLoading, setPushNotificationPermissionLoading] =
+    useState(false);
   
   // State to control the visibility of the confirmation modal
   const [isSignOutModalVisible, setSignOutModalVisible] = useState(false);
 
-  const pushNotifications =
+  const backendPushNotifications =
     notificationSettingsQuery.data?.data.sendNotification ?? false;
+  const isPushNotificationPermissionGranted =
+    pushNotificationPermissionStatus === 'granted';
+  const isPushNotificationPermissionKnown =
+    pushNotificationPermissionStatus !== undefined;
+  const pushNotifications =
+    backendPushNotifications &&
+    (!isPushNotificationPermissionKnown || isPushNotificationPermissionGranted);
   const isPushNotificationLoading =
     notificationSettingsQuery.isLoading ||
-    toggleDriverNotificationSettings.isPending;
+    toggleDriverNotificationSettings.isPending ||
+    isPushNotificationPermissionLoading;
   const notificationErrorMessage = getApiErrorMessage(
     notificationSettingsQuery.error,
   );
   const isPushNotificationToggleDisabled =
     isPushNotificationLoading || !notificationSettingsQuery.data;
+  const shouldPromptForNotificationPermission =
+    backendPushNotifications &&
+    isPushNotificationPermissionKnown &&
+    !isPushNotificationPermissionGranted;
   const pushNotificationDescription = notificationSettingsQuery.isError
     ? notificationErrorMessage ?? 'Unable to load notification preference'
-    : pushNotifications
+    : shouldPromptForNotificationPermission
+      ? 'Turn on notification permission in Settings'
+      : pushNotifications
       ? 'Trip alerts are enabled'
       : 'Trip alerts are off';
   const dashboardTabBarHeight =
@@ -141,9 +163,7 @@ export default function SettingsScreen() {
         ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA
       : IOS_DASHBOARD_TAB_BAR_HEIGHT;
   const signOutBottomOffset =
-    Platform.OS === 'ios'
-      ? dashboardTabBarHeight + Math.max(insets.bottom, 16) + IOS_SIGN_OUT_TAB_BAR_GAP
-      : dashboardTabBarHeight + Math.max(insets.bottom, 16);
+    dashboardTabBarHeight + Math.max(insets.bottom, 16) + SIGN_OUT_TAB_BAR_GAP;
   const scrollBottomPadding =
     signOutBottomOffset + SIGN_OUT_BUTTON_HEIGHT + SIGN_OUT_BUTTON_GAP;
 
@@ -162,12 +182,28 @@ export default function SettingsScreen() {
     }
   };
 
+  const syncPushNotificationPermission = async () => {
+    setPushNotificationPermissionLoading(true);
+
+    try {
+      const status = await getPushNotificationPermissionStatus();
+
+      setPushNotificationPermissionStatus(status);
+    } catch {
+      setPushNotificationPermissionStatus(undefined);
+    } finally {
+      setPushNotificationPermissionLoading(false);
+    }
+  };
+
   useEffect(() => {
     void syncLocationPermission();
+    void syncPushNotificationPermission();
 
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         void syncLocationPermission();
+        void syncPushNotificationPermission();
       }
     });
 
@@ -257,12 +293,47 @@ export default function SettingsScreen() {
     await openAppSettings();
   };
 
-  const handlePushNotificationsChange = async () => {
+  const handlePushNotificationsChange = async (nextValue: boolean) => {
     if (isPushNotificationToggleDisabled) {
       return;
     }
 
     try {
+      if (nextValue) {
+        setPushNotificationPermissionLoading(true);
+
+        const hasPermission = await requestPushNotificationPermission();
+        const permissionStatus = await getPushNotificationPermissionStatus();
+
+        setPushNotificationPermissionStatus(permissionStatus);
+        setPushNotificationPermissionLoading(false);
+
+        if (!hasPermission) {
+          Toast.show({
+            type: 'errorToast',
+            text1: 'Notifications permission required',
+            text2: 'Please allow notifications in your device settings.',
+            position: 'top',
+            topOffset: 60,
+          });
+          return;
+        }
+
+        if (backendPushNotifications) {
+          Toast.show({
+            type: 'successToast',
+            text1: 'Push notifications enabled',
+            position: 'top',
+            topOffset: 60,
+          });
+          return;
+        }
+      }
+
+      if (!nextValue && !backendPushNotifications) {
+        return;
+      }
+
       const response = await toggleDriverNotificationSettings.mutateAsync();
 
       Toast.show({
@@ -274,6 +345,8 @@ export default function SettingsScreen() {
         topOffset: 60,
       });
     } catch (error) {
+      setPushNotificationPermissionLoading(false);
+
       Toast.show({
         type: 'errorToast',
         text1: 'Unable to update notifications',

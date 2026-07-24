@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import Toast from 'react-native-toast-message';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppStatusBar } from '../src/components/common/AppStatusBar';
 import { toastConfig } from '../src/components/common/ToastConfig';
 import {
@@ -12,8 +13,11 @@ import {
   useAuthSession,
 } from '../src/context/AuthSessionContext';
 import { PasswordResetProvider } from '../src/context/PasswordResetContext';
+import { configureTextScaling } from '../src/utils/textScaling';
 
 const queryClient = new QueryClient();
+
+configureTextScaling();
 
 function RootStack() {
   const authSession = useAuthSession();
@@ -57,15 +61,17 @@ function RootStack() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthSessionProvider>
-        <PasswordResetProvider>
-          <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
-          <RootStack />
-          {/* Toast must be the last component rendered so it sits on top of all screens */}
-          <Toast config={toastConfig} />
-        </PasswordResetProvider>
-      </AuthSessionProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthSessionProvider>
+          <PasswordResetProvider>
+            <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+            <RootStack />
+            {/* Toast must be the last component rendered so it sits on top of all screens */}
+            <Toast config={toastConfig} />
+          </PasswordResetProvider>
+        </AuthSessionProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

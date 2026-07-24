@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { Platform, View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCurrentUser } from '../../api/hooks/useUsers';
 import { NotificationBellButton } from '../notifications/NotificationBellButton';
@@ -11,12 +12,19 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title }) => {
+  const insets = useSafeAreaInsets();
   const currentUserQuery = useCurrentUser();
   const currentUser = currentUserQuery.data?.data;
   const userInitials = getUserInitials(currentUser);
 
   return (
-    <View className="flex-row justify-between items-center px-6 pt-2 pb-4">
+    <View
+      className="flex-row justify-between items-center px-6 pb-4"
+      style={{
+        paddingTop:
+          Platform.OS === 'android' ? Math.max(insets.top, 20) + 12 : 8,
+      }}
+    >
       <Text className="text-3xl font-inter font-bold text-[#000000]">
         {title}
       </Text>
