@@ -28,6 +28,7 @@ import { AppStatusBar } from '../src/components/common/AppStatusBar';
 import { CustomBack } from '../src/components/common/CustomBack';
 import { NotificationCard } from '../src/components/common/NotificationCard';
 import { EmptyState } from '../src/components/common/EmptyState'; // Imported the reusable component
+import { useAppTheme } from '../src/theme/useAppTheme';
 
 interface NotificationSection {
   title: 'Today' | 'Older';
@@ -125,6 +126,7 @@ const groupNotifications = (
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const notificationsQuery = useUserNotifications();
   const markNotificationRead = useMarkNotificationRead();
   const markAllNotificationsRead = useMarkAllNotificationsRead();
@@ -144,6 +146,9 @@ export default function NotificationsScreen() {
   const hasUnreadNotifications = notifications.some(
     (notification) => !notification.isRead,
   );
+  const markAllColor = hasUnreadNotifications
+    ? theme.isDark ? theme.colors.primary : '#0673FF'
+    : theme.isDark ? theme.colors.textSubtle : '#98A2B3';
   const errorMessage = getApiErrorMessage(notificationsQuery.error);
   const isInitialLoading =
     notificationsQuery.isLoading && notificationSections.length === 0;
@@ -213,8 +218,11 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={theme.styles.background}>
+      <AppStatusBar
+        style={theme.isDark ? 'light' : 'dark'}
+        backgroundColor={theme.isDark ? theme.colors.background : '#F8FAFC'}
+      />
       <View
         className="px-6 pb-4"
         style={{
@@ -222,9 +230,15 @@ export default function NotificationsScreen() {
             Platform.OS === 'android' ? Math.max(insets.top, 20) + 8 : 8,
         }}
       >
-        <CustomBack color="#1D2739" className="mb-4" />
+        <CustomBack
+          color={theme.isDark ? theme.colors.text : '#1D2739'}
+          className="mb-4"
+        />
         <View className="flex-row items-center justify-between">
-          <Text className="text-3xl font-inter font-bold text-[#000000]">
+          <Text
+            className="text-3xl font-inter font-bold text-[#000000]"
+            style={theme.styles.primaryText}
+          >
             Notifications
           </Text>
 
@@ -240,16 +254,30 @@ export default function NotificationsScreen() {
                   ? 'border-[#0673FF]'
                   : 'border-[#D0D5DD]'
               }`}
+              style={
+                theme.isDark
+                  ? {
+                      borderColor: hasUnreadNotifications
+                        ? theme.colors.primary
+                        : theme.colors.border,
+                    }
+                  : undefined
+              }
             >
               <Feather
                 name="check-circle"
                 size={16}
-                color={hasUnreadNotifications ? '#0673FF' : '#98A2B3'}
+                color={markAllColor}
               />
               <Text
                 className={`font-inter font-medium text-xs ml-1.5 ${
                   hasUnreadNotifications ? 'text-[#0673FF]' : 'text-[#98A2B3]'
                 }`}
+                style={
+                  theme.isDark
+                    ? { color: markAllColor }
+                    : undefined
+                }
               >
                 Mark all
               </Text>
@@ -261,7 +289,10 @@ export default function NotificationsScreen() {
       {isInitialLoading ? (
         <View className="flex-1 items-center justify-center pb-20">
           <ActivityIndicator size="small" color="#0673FF" />
-          <Text className="font-inter text-[#667185] mt-3">
+          <Text
+            className="font-inter text-[#667185] mt-3"
+            style={theme.styles.mutedText}
+          >
             Loading notifications
           </Text>
         </View>
@@ -287,7 +318,10 @@ export default function NotificationsScreen() {
             void notificationsQuery.refetch();
           }}
           renderSectionHeader={({ section }) => (
-            <Text className="font-inter font-medium text-[13px] text-[#475367] tracking-wider mb-3 mt-1 ml-1 uppercase">
+            <Text
+              className="font-inter font-medium text-[13px] text-[#475367] tracking-wider mb-3 mt-1 ml-1 uppercase"
+              style={theme.styles.mutedText}
+            >
               {section.title}
             </Text>
           )}

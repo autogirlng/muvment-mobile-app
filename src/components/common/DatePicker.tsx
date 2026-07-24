@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable, GestureResponderEvent } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+import { useAppTheme } from '../../theme/useAppTheme';
+
 interface DatePickerModalProps {
   visible: boolean;
   onClose: () => void;
@@ -13,6 +15,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   onClose,
   onSelectDate 
 }) => {
+  const theme = useAppTheme();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [pickerMode, setPickerMode] = useState<'calendar' | 'month' | 'year'>('calendar');
@@ -135,10 +138,17 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
       onRequestClose={onClose}
     >
       <Pressable className="flex-1 bg-black/40 justify-center items-center px-4" onPress={onClose}>
-        <Pressable className="bg-white w-full max-w-sm rounded-3xl p-5 shadow-xl" onPress={stopOverlayClose}>
+        <Pressable
+          className="bg-white w-full max-w-sm rounded-3xl p-5 shadow-xl"
+          style={theme.styles.card}
+          onPress={stopOverlayClose}
+        >
           <View className="flex-row justify-between items-center mb-6 px-2">
             <TouchableOpacity className="flex-row items-center flex-1 pr-3" onPress={handleHeaderPress}>
-              <Text className="text-xl font-inter font-bold text-[#101928] mr-2">
+              <Text
+                className="text-xl font-inter font-bold text-[#101928] mr-2"
+                style={theme.styles.primaryText}
+              >
                 {displayedTitle}
               </Text>
               <Feather name="chevron-down" size={20} color="#0088FF" />
@@ -158,7 +168,11 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
             <>
               <View className="flex-row justify-between mb-4 px-2">
                 {daysOfWeek.map((day, idx) => (
-                  <Text key={idx} className="w-9 text-center font-inter font-bold text-[#101928]">
+                  <Text
+                    key={idx}
+                    className="w-9 text-center font-inter font-bold text-[#101928]"
+                    style={theme.styles.primaryText}
+                  >
                     {day}
                   </Text>
                 ))}
@@ -176,6 +190,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                       className={`w-10 h-10 mb-2 items-center justify-center rounded-full ${
                         isSelected ? 'bg-[#0088FF]' : 'border border-[#F2F4F7]'
                       }`}
+                      style={!isSelected ? theme.styles.border : undefined}
                     >
                       <Text 
                         className={`font-inter text-base ${
@@ -185,6 +200,13 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                               ? 'text-[#101928]' 
                               : 'text-[#D0D5DD]'
                         }`}
+                        style={
+                          isSelected
+                            ? undefined
+                            : item.isCurrentMonth
+                              ? theme.styles.primaryText
+                              : theme.styles.subtleText
+                        }
                       >
                         {item.day}
                       </Text>
@@ -214,8 +236,12 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                     className={`w-[30%] h-12 mb-3 rounded-xl items-center justify-center ${
                       isActive ? 'bg-[#0088FF]' : 'border border-[#E4E7EC] bg-white'
                     }`}
+                    style={!isActive ? theme.styles.card : undefined}
                   >
-                    <Text className={`font-inter font-semibold ${isActive ? 'text-white' : 'text-[#101928]'}`}>
+                    <Text
+                      className={`font-inter font-semibold ${isActive ? 'text-white' : 'text-[#101928]'}`}
+                      style={!isActive ? theme.styles.primaryText : undefined}
+                    >
                       {item}
                     </Text>
                   </TouchableOpacity>

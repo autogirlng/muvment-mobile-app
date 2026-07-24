@@ -27,9 +27,11 @@ import {
   getUserDisplayName,
   getUserInitials,
 } from '../../src/utils/userProfile';
+import { useAppTheme } from '../../src/theme/useAppTheme';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const currentUserQuery = useCurrentUser();
   const driverTripStatisticsQuery = useDriverTripStatistics();
   const driverTripsQuery = useDriverTrips({
@@ -70,9 +72,10 @@ export default function HomeScreen() {
   const handleTripsRefresh = useCallback(() => {
     void driverTripsQuery.refetch();
   }, [driverTripsQuery]);
+  const cardIconColor = theme.isDark ? theme.colors.icon : '#475367';
 
   return (
-    <View className="flex-1 bg-[#FAFAFA]">
+    <View className="flex-1 bg-[#FAFAFA]" style={theme.styles.background}>
       <AppStatusBar style="light" backgroundColor="#1D2739" />
       
       {/* Curved Gradient Header */}
@@ -121,13 +124,13 @@ export default function HomeScreen() {
           title="Assigned Trips"
           value={getStatisticValue(tripStatistics?.assignedTrips)}
           bgColorClass="bg-white"
-          icon={<Ionicons name="car-outline" size={20} color="#475367" />}
+          icon={<Ionicons name="car-outline" size={20} color={cardIconColor} />}
         />
         <StatCard
           title="Upcoming Trips"
           value={getStatisticValue(tripStatistics?.upcomingTrips)}
           bgColorClass="bg-[#FFEDC6]"
-          icon={<Ionicons name="calendar-outline" size={20} color="#475367" />}
+          icon={<Ionicons name="calendar-outline" size={20} color={cardIconColor} />}
         />
       </View>
 
@@ -138,7 +141,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={driverTripsQuery.isRefetching}
             onRefresh={handleTripsRefresh}
-            tintColor="#1D2739"
+            tintColor={theme.isDark ? theme.colors.primary : '#1D2739'}
           />
         }
       >

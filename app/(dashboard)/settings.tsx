@@ -30,17 +30,16 @@ import {
   getPushNotificationPermissionStatus,
   requestPushNotificationPermission,
 } from '../../src/utils/pushNotifications';
+import { useAppTheme } from '../../src/theme/useAppTheme';
 
 const ANDROID_DASHBOARD_TAB_BAR_BASE_HEIGHT = 70;
 const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_MIN = 20;
 const ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA = 8;
 const IOS_DASHBOARD_TAB_BAR_HEIGHT = 85;
-const SIGN_OUT_BUTTON_HEIGHT = 56;
-const SIGN_OUT_BUTTON_GAP = 24;
-const SIGN_OUT_TAB_BAR_GAP = 16;
 const SUPPORT_EMAIL = 'info@autogirl.ng';
 
 interface SettingsActionRowProps {
+  destructive?: boolean;
   disabled?: boolean;
   description: string;
   iconName: keyof typeof Feather.glyphMap;
@@ -49,34 +48,55 @@ interface SettingsActionRowProps {
 }
 
 const SettingsActionRow = ({
+  destructive = false,
   disabled = false,
   description,
   iconName,
   onPress,
   title,
-}: SettingsActionRowProps) => (
-  <TouchableOpacity
-    activeOpacity={0.8}
-    disabled={disabled}
-    onPress={onPress}
-    className={`flex-row items-center justify-between px-6 py-4 ${
-      disabled ? 'opacity-50' : ''
-    }`}
-  >
-    <View className="flex-row items-center flex-1 pr-4">
-      <Feather name={iconName} size={20} color="#475367" />
-      <View className="ml-4">
-        <Text className="text-brand-primary font-inter font-medium text-base mb-0.5">
-          {title}
-        </Text>
-        <Text className="text-brand-secondary font-inter text-sm">
-          {description}
-        </Text>
+}: SettingsActionRowProps) => {
+  const theme = useAppTheme();
+  const iconColor = destructive
+    ? '#D92D20'
+    : theme.styles.icon ?? '#475367';
+  const chevronColor = destructive
+    ? '#D92D20'
+    : theme.isDark ? theme.colors.textSubtle : '#98A2B3';
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      disabled={disabled}
+      onPress={onPress}
+      className={`flex-row items-center justify-between px-6 py-4 ${
+        disabled ? 'opacity-50' : ''
+      }`}
+    >
+      <View className="flex-row items-center flex-1 pr-4">
+        <Feather name={iconName} size={20} color={iconColor} />
+        <View className="ml-4">
+          <Text
+            className={`font-inter font-medium text-base mb-0.5 ${
+              destructive ? 'text-[#D92D20]' : 'text-brand-primary'
+            }`}
+            style={destructive ? undefined : theme.styles.primaryText}
+          >
+            {title}
+          </Text>
+          <Text
+            className={`font-inter text-sm ${
+              destructive ? 'text-[#D92D20]' : 'text-brand-secondary'
+            }`}
+            style={destructive ? undefined : theme.styles.mutedText}
+          >
+            {description}
+          </Text>
+        </View>
       </View>
-    </View>
-    {!disabled && <Feather name="chevron-right" size={20} color="#98A2B3" />}
-  </TouchableOpacity>
-);
+      {!disabled && <Feather name="chevron-right" size={20} color={chevronColor} />}
+    </TouchableOpacity>
+  );
+};
 
 const isLocationPermissionGranted = (permission: {
   granted?: boolean;
@@ -112,6 +132,7 @@ const reportProblem = async () => {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const authSession = useAuthSession();
   const queryClient = useQueryClient();
   const notificationSettingsQuery = useDriverNotificationSettings();
@@ -162,10 +183,8 @@ export default function SettingsScreen() {
         Math.max(insets.bottom, ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_MIN) +
         ANDROID_DASHBOARD_TAB_BAR_BOTTOM_PADDING_EXTRA
       : IOS_DASHBOARD_TAB_BAR_HEIGHT;
-  const signOutBottomOffset =
-    dashboardTabBarHeight + Math.max(insets.bottom, 16) + SIGN_OUT_TAB_BAR_GAP;
   const scrollBottomPadding =
-    signOutBottomOffset + SIGN_OUT_BUTTON_HEIGHT + SIGN_OUT_BUTTON_GAP;
+    dashboardTabBarHeight + Math.max(insets.bottom, 16) + 24;
 
   const syncLocationPermission = async () => {
     try {
@@ -384,8 +403,11 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAFA]">
-      <AppStatusBar style="dark" backgroundColor="#FAFAFA" />
+    <SafeAreaView className="flex-1 bg-[#FAFAFA]" style={theme.styles.background}>
+      <AppStatusBar
+        style={theme.isDark ? 'light' : 'dark'}
+        backgroundColor={theme.isDark ? theme.colors.background : '#FAFAFA'}
+      />
       <DashboardHeader title="Settings" />
 
       <ScrollView
@@ -445,31 +467,16 @@ export default function SettingsScreen() {
             description="Contact support about an app issue"
             onPress={reportProblem}
           />
+
+          <SettingsActionRow
+            destructive
+            iconName="log-out"
+            title="Sign Out"
+            description="Sign out of your driver account"
+            onPress={() => setSignOutModalVisible(true)}
+          />
         </View>
       </ScrollView>
-
-      <View
-        style={{
-          bottom: signOutBottomOffset,
-          left: 24,
-          position: 'absolute',
-          right: 24,
-          zIndex: 10,
-        }}
-      >
-        <TouchableOpacity 
-          onPress={() => setSignOutModalVisible(true)} // Opens the modal instead of instantly signing out
-          className="flex-row items-center justify-between bg-white border border-[#E4E7EC] rounded-2xl px-4 h-14 shadow-sm"
-        >
-          <View className="flex-row items-center">
-            <Feather name="log-out" size={20} color="#D92D20" />
-            <Text className="ml-3 font-inter font-medium text-base text-[#D92D20]">
-              Sign Out
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={20} color="#D92D20" />
-        </TouchableOpacity>
-      </View>
 
       <ConfirmationModal
         visible={isSignOutModalVisible}

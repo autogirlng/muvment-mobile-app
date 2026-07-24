@@ -42,6 +42,7 @@ import {
   getDriverTripBookingTimerType,
   type DriverTripBookingTimerType,
 } from '../../src/utils/driverTrips';
+import { useAppTheme } from '../../src/theme/useAppTheme';
 
 const getStatusFromBadges = (badges: { label: string }[]) => {
   const labels = badges.map((badge) => badge.label.toUpperCase());
@@ -192,6 +193,7 @@ const TimerRing = ({
   remainingSeconds: number;
   totalSeconds: number;
 }) => {
+  const theme = useAppTheme();
   const size = 120;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
@@ -206,7 +208,7 @@ const TimerRing = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#D9D9D9"
+          stroke={theme.isDark ? theme.colors.border : '#D9D9D9'}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -225,7 +227,10 @@ const TimerRing = ({
           originY={size / 2}
         />
       </Svg>
-      <Text className="absolute font-inter font-bold text-[#1D2739] text-[18px]">
+      <Text
+        className="absolute font-inter font-bold text-[#1D2739] text-[18px]"
+        style={theme.styles.primaryText}
+      >
         {formatTime(remainingSeconds)}
       </Text>
     </View>
@@ -372,6 +377,7 @@ const getTripItinerary = (tripDetails?: DriverTripDetails) => {
 
 export default function TripDetailScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const { id, stage, rideType, remainingSeconds } = useLocalSearchParams<{
     id?: string;
     stage?: string;
@@ -539,10 +545,18 @@ export default function TripDetailScreen() {
     }
   };
 
-  const SectionDivider = () => <View className="h-[1px] bg-[#E4E7EC] w-full my-3" />;
+  const SectionDivider = () => (
+    <View
+      className="h-[1px] bg-[#E4E7EC] w-full my-3"
+      style={theme.styles.divider}
+    />
+  );
 
   const SectionHeader = ({ title }: { title: string }) => (
-    <Text className="font-inter font-semibold text-[13px] text-[#1F2937] tracking-wider uppercase mb-4">
+    <Text
+      className="font-inter font-semibold text-[13px] text-[#1F2937] tracking-wider uppercase mb-4"
+      style={theme.styles.mutedText}
+    >
       {title}
     </Text>
   );
@@ -560,8 +574,15 @@ export default function TripDetailScreen() {
         className="flex-row items-center ml-[-8px]"
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather name="chevron-left" size={24} color="#101928" />
-        <Text className="text-[#101928] font-inter text-base ml-1">
+        <Feather
+          name="chevron-left"
+          size={24}
+          color={theme.isDark ? theme.colors.text : '#101928'}
+        />
+        <Text
+          className="text-[#101928] font-inter text-base ml-1"
+          style={theme.styles.primaryText}
+        >
           Back
         </Text>
       </TouchableOpacity>
@@ -636,8 +657,11 @@ export default function TripDetailScreen() {
 
   if (!tripId) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={theme.styles.background}>
+        <AppStatusBar
+          style={theme.isDark ? 'light' : 'dark'}
+          backgroundColor={theme.isDark ? theme.colors.background : '#F8FAFC'}
+        />
         {renderBackHeader()}
         <EmptyState
           containerClassName="mt-32"
@@ -650,8 +674,11 @@ export default function TripDetailScreen() {
 
   if (driverTripQuery.isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={theme.styles.background}>
+        <AppStatusBar
+          style={theme.isDark ? 'light' : 'dark'}
+          backgroundColor={theme.isDark ? theme.colors.background : '#F8FAFC'}
+        />
         {renderBackHeader()}
         <EmptyState
           containerClassName="mt-32"
@@ -664,8 +691,11 @@ export default function TripDetailScreen() {
 
   if (driverTripQuery.isError || !driverTripDetails) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-        <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+      <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={theme.styles.background}>
+        <AppStatusBar
+          style={theme.isDark ? 'light' : 'dark'}
+          backgroundColor={theme.isDark ? theme.colors.background : '#F8FAFC'}
+        />
         {renderBackHeader()}
         <EmptyState
           containerClassName="mt-32"
@@ -677,8 +707,11 @@ export default function TripDetailScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={theme.styles.background}>
+      <AppStatusBar
+        style={theme.isDark ? 'light' : 'dark'}
+        backgroundColor={theme.isDark ? theme.colors.background : '#F8FAFC'}
+      />
       {renderBackHeader()}
 
       {trip.status !== 'COMPLETE' && (
@@ -696,10 +729,16 @@ export default function TripDetailScreen() {
               remainingSeconds={rideTimer.remainingSeconds}
               totalSeconds={rideTimer.totalSeconds}
             />
-            <Text className="font-inter text-[#667185] text-[13px] mt-4 mb-1">
+            <Text
+              className="font-inter text-[#667185] text-[13px] mt-4 mb-1"
+              style={theme.styles.mutedText}
+            >
               Time remaining
             </Text>
-            <Text className="font-inter font-bold text-[#1D2739] text-[17px]">
+            <Text
+              className="font-inter font-bold text-[#1D2739] text-[17px]"
+              style={theme.styles.primaryText}
+            >
               {rideTimer.label}
             </Text>
           </View>
@@ -725,10 +764,16 @@ export default function TripDetailScreen() {
         <SectionHeader title="Client" />
         <View className="flex-row justify-between items-center">
           <View>
-            <Text className="font-inter font-medium text-[16px] text-[#101928] mb-1">
+            <Text
+              className="font-inter font-medium text-[16px] text-[#101928] mb-1"
+              style={theme.styles.primaryText}
+            >
               {trip.client.name}
             </Text>
-            <Text className="font-inter text-[#667185] text-[14px]">
+            <Text
+              className="font-inter text-[#667185] text-[14px]"
+              style={theme.styles.mutedText}
+            >
               {trip.client.phone}
             </Text>
           </View>
@@ -770,14 +815,27 @@ export default function TripDetailScreen() {
         {/* --- VEHICLE --- */}
         <SectionHeader title="Vehicle" />
         <View className="flex-row items-center">
-          <View className="w-[46px] h-[46px] bg-[#F2F4F7] rounded-xl items-center justify-center mr-3">
-            <Ionicons name="car-outline" size={24} color="#475367" />
+          <View
+            className="w-[46px] h-[46px] bg-[#F2F4F7] rounded-xl items-center justify-center mr-3"
+            style={theme.isDark ? { backgroundColor: theme.colors.surfaceAlt } : undefined}
+          >
+            <Ionicons
+              name="car-outline"
+              size={24}
+              color={theme.isDark ? theme.colors.icon : '#475367'}
+            />
           </View>
           <View>
-            <Text className="font-inter font-medium text-[15px] text-[#101928] mb-0.5">
+            <Text
+              className="font-inter font-medium text-[15px] text-[#101928] mb-0.5"
+              style={theme.styles.primaryText}
+            >
               {trip.vehicle.model}
             </Text>
-            <Text className="font-inter text-[#667185] text-[13px]">
+            <Text
+              className="font-inter text-[#667185] text-[13px]"
+              style={theme.styles.mutedText}
+            >
               {trip.vehicle.plate}
             </Text>
           </View>
@@ -802,21 +860,42 @@ export default function TripDetailScreen() {
 
         <View className="space-y-2">
           <View className="flex-row items-center">
-            <Feather name="calendar" size={15} color="#98A2B3" />
-            <Text className="ml-2 font-inter text-[#667185] text-[14px]">
-              Date: <Text className="text-[#101928] font-medium">{trip.booking.date}</Text>
+            <Feather
+              name="calendar"
+              size={15}
+              color={theme.isDark ? theme.colors.icon : '#98A2B3'}
+            />
+            <Text
+              className="ml-2 font-inter text-[#667185] text-[14px]"
+              style={theme.styles.mutedText}
+            >
+              Date: <Text className="text-[#101928] font-medium" style={theme.styles.primaryText}>{trip.booking.date}</Text>
             </Text>
           </View>
           <View className="flex-row items-center mt-2">
-            <Feather name="clock" size={15} color="#98A2B3" />
-            <Text className="ml-2 font-inter text-[#667185] text-[14px]">
-              Duration: <Text className="text-[#101928] font-medium">{trip.booking.duration}</Text>
+            <Feather
+              name="clock"
+              size={15}
+              color={theme.isDark ? theme.colors.icon : '#98A2B3'}
+            />
+            <Text
+              className="ml-2 font-inter text-[#667185] text-[14px]"
+              style={theme.styles.mutedText}
+            >
+              Duration: <Text className="text-[#101928] font-medium" style={theme.styles.primaryText}>{trip.booking.duration}</Text>
             </Text>
           </View>
           <View className="flex-row items-center mt-2">
-            <Feather name="calendar" size={15} color="#98A2B3" />
-            <Text className="ml-2 font-inter text-[#667185] text-[14px]">
-              Schedule: <Text className="text-[#101928] font-medium">{trip.booking.schedule}</Text>
+            <Feather
+              name="calendar"
+              size={15}
+              color={theme.isDark ? theme.colors.icon : '#98A2B3'}
+            />
+            <Text
+              className="ml-2 font-inter text-[#667185] text-[14px]"
+              style={theme.styles.mutedText}
+            >
+              Schedule: <Text className="text-[#101928] font-medium" style={theme.styles.primaryText}>{trip.booking.schedule}</Text>
             </Text>
           </View>
         </View>
@@ -828,12 +907,21 @@ export default function TripDetailScreen() {
         <View className="space-y-4">
           {trip.itinerary.map((item, index) => (
             <View key={index} className="flex-row items-start mt-2">
-              <View className="w-5 h-5 rounded-full bg-[#D0D5DD] items-center justify-center mt-0.5 mr-3">
-                <Text className="font-inter font-semibold text-[#344054] text-[10px]">
+              <View
+                className="w-5 h-5 rounded-full bg-[#D0D5DD] items-center justify-center mt-0.5 mr-3"
+                style={theme.isDark ? { backgroundColor: theme.colors.surfaceAlt } : undefined}
+              >
+                <Text
+                  className="font-inter font-semibold text-[#344054] text-[10px]"
+                  style={theme.styles.mutedText}
+                >
                   {index + 1}
                 </Text>
               </View>
-              <Text className="flex-1 font-inter text-[#475367] text-[14px] leading-5">
+              <Text
+                className="flex-1 font-inter text-[#475367] text-[14px] leading-5"
+                style={theme.styles.mutedText}
+              >
                 {item}
               </Text>
             </View>
@@ -841,9 +929,19 @@ export default function TripDetailScreen() {
         </View>
 
         {actionConfig?.showPickupTooltip && isPickupTooltipVisible && (
-          <View className="bg-[#F2F4F7] border border-[#E4E7EC] rounded-xl px-4 py-3 mt-8 mb-3 flex-row items-center">
-            <Ionicons name="information-circle-outline" size={18} color="#667185" />
-            <Text className="font-inter text-[#667185] text-[13px] ml-2 flex-1">
+          <View
+            className="bg-[#F2F4F7] border border-[#E4E7EC] rounded-xl px-4 py-3 mt-8 mb-3 flex-row items-center"
+            style={theme.styles.card}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={18}
+              color={theme.isDark ? theme.colors.icon : '#667185'}
+            />
+            <Text
+              className="font-inter text-[#667185] text-[13px] ml-2 flex-1"
+              style={theme.styles.mutedText}
+            >
               Pickup time not reached.
             </Text>
           </View>

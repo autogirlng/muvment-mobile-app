@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+import { useAppTheme } from '../../theme/useAppTheme';
+
 export interface NotificationCardProps {
   iconName: keyof typeof Feather.glyphMap;
   title: string;
@@ -23,6 +25,26 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   onDismiss,
   onPress,
 }) => {
+  const theme = useAppTheme();
+  const cardBorderColor = theme.isDark
+    ? isRead
+      ? theme.colors.border
+      : theme.colors.primary
+    : undefined;
+  const iconContainerStyle = theme.isDark
+    ? {
+        backgroundColor: isRead ? theme.colors.surfaceAlt : '#17345E',
+        borderColor: isRead ? theme.colors.border : '#315F9E',
+      }
+    : undefined;
+  const iconColor = theme.isDark
+    ? isRead
+      ? theme.colors.textSubtle
+      : theme.colors.primary
+    : isRead
+      ? '#667185'
+      : '#0673FF';
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -31,8 +53,23 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       className={`bg-white rounded-xl shadow-sm mb-3 overflow-hidden flex-row border ${
         isRead ? 'border-[#E4E7EC]' : 'border-[#B2CCFF]'
       }`}
+      style={[
+        theme.styles.card,
+        cardBorderColor ? { borderColor: cardBorderColor } : undefined,
+      ]}
     >
-      <View className={`w-1.5 ${isRead ? 'bg-[#D0D5DD]' : 'bg-[#0673FF]'}`} />
+      <View
+        className={`w-1.5 ${isRead ? 'bg-[#D0D5DD]' : 'bg-[#0673FF]'}`}
+        style={
+          theme.isDark
+            ? {
+                backgroundColor: isRead
+                  ? theme.colors.border
+                  : theme.colors.primary,
+              }
+            : undefined
+        }
+      />
       
       {/* Main Content Area */}
       <View className="flex-1 p-4 flex-row items-start">
@@ -44,8 +81,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               ? 'bg-[#F2F4F7] border-[#E4E7EC]'
               : 'bg-[#EFF4FF] border-[#D1E0FF]'
           }`}
+          style={iconContainerStyle}
         >
-          <Feather name={iconName} size={18} color={isRead ? '#667185' : '#0673FF'} />
+          <Feather name={iconName} size={18} color={iconColor} />
         </View>
 
         {/* Text Content */}
@@ -60,14 +98,21 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                   ? 'font-medium text-[#475367]'
                   : 'font-semibold text-[#101928]'
               }`}
+              style={isRead ? theme.styles.mutedText : theme.styles.primaryText}
             >
               {title}
             </Text>
           </View>
-          <Text className="font-inter text-[#475367] text-[14px] leading-5 mb-2">
+          <Text
+            className="font-inter text-[#475367] text-[14px] leading-5 mb-2"
+            style={theme.styles.mutedText}
+          >
             {description}
           </Text>
-          <Text className="font-inter text-[#98A2B3] text-xs">
+          <Text
+            className="font-inter text-[#98A2B3] text-xs"
+            style={theme.styles.subtleText}
+          >
             {timestamp}
           </Text>
         </View>
@@ -79,7 +124,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             className="p-1 ml-1"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Feather name="x" size={20} color="#101928" />
+            <Feather
+              name="x"
+              size={20}
+              color={theme.isDark ? theme.colors.text : '#101928'}
+            />
           </TouchableOpacity>
         )}
       </View>

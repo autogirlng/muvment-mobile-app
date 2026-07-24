@@ -34,6 +34,7 @@ import {
   isDriverTripActive,
   isDriverTripUpcoming,
 } from '../../src/utils/driverTrips';
+import { useAppTheme } from '../../src/theme/useAppTheme';
 
 const DASHBOARD_TAB_BAR_HEIGHT = 85;
 const TRIPS_PAGE_SIZE = 50;
@@ -150,6 +151,7 @@ const getCountedTabLabel = (
 
 export default function TripsScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const listBottomPadding = DASHBOARD_TAB_BAR_HEIGHT + Math.max(insets.bottom, 16) + 24;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TripFilter>('All');
@@ -276,8 +278,11 @@ export default function TripsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <AppStatusBar style="dark" backgroundColor="#F8FAFC" />
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" style={theme.styles.background}>
+      <AppStatusBar
+        style={theme.isDark ? 'light' : 'dark'}
+        backgroundColor={theme.isDark ? theme.colors.background : '#F8FAFC'}
+      />
       <DashboardHeader title="Trips" />
 
       <SearchBar
@@ -290,13 +295,26 @@ export default function TripsScreen() {
       {/* Dynamic "X Trips Found" text that only appears when searching */}
       {isSearching && !isLoadingTrips && !isTripsError && (
         <View className="px-5 pb-3">
-          <Text className="font-inter font-semibold text-[13px] text-[#101928]">
+          <Text
+            className="font-inter font-semibold text-[13px] text-[#101928]"
+            style={theme.styles.primaryText}
+          >
             {totalFound} Trip{totalFound !== 1 ? 's' : ''} Found
           </Text>
         </View>
       )}
 
-      <View className="border-t border-b border-[#E4E7EC] py-3 bg-[#E4E7EC]">
+      <View
+        className="border-t border-b border-[#E4E7EC] py-3 bg-[#E4E7EC]"
+        style={
+          theme.isDark
+            ? {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              }
+            : undefined
+        }
+      >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -322,6 +340,7 @@ export default function TripsScreen() {
                   className={`font-inter text-sm ${
                     isActive ? 'text-white font-medium' : 'text-[#475367] font-medium'
                   }`}
+                  style={!isActive ? theme.styles.mutedText : undefined}
                 >
                   {tab.label}
                 </Text>
@@ -338,7 +357,7 @@ export default function TripsScreen() {
           <RefreshControl
             refreshing={driverTripsQuery.isRefetching && !isLoadingTrips}
             onRefresh={driverTripsQuery.refetch}
-            tintColor="#1E3A5F"
+            tintColor={theme.isDark ? theme.colors.primary : '#1E3A5F'}
           />
         }
       >
@@ -355,7 +374,10 @@ export default function TripsScreen() {
         ) : visibleSections.length > 0 ? (
           visibleSections.map((section) => (
             <View key={section.title} className="pt-4">
-              <Text className="font-inter text-sm text-[#475367] px-4 mb-3">
+              <Text
+                className="font-inter text-sm text-[#475367] px-4 mb-3"
+                style={theme.styles.mutedText}
+              >
                 {section.title}
               </Text>
 

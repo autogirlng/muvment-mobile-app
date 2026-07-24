@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, Image, ImageSourcePropType } from 'react-native';
 
+import { useAppTheme } from '../../theme/useAppTheme';
+
 interface EmptyStateProps {
   title: string;
   description: string;
@@ -17,6 +19,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   image = require('../../../assets/brand/empty.png'),
   containerClassName = 'mt-16',
 }) => {
+  const theme = useAppTheme();
+
   return (
     <View className={`flex-1 items-center justify-center px-8 ${containerClassName}`}>
       <Image 
@@ -24,10 +28,16 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className="w-48 h-48 mb-6"
         resizeMode="contain"
       />
-      <Text className="text-2xl font-inter font-medium text-[#475367] mb-3 text-center">
+      <Text
+        className="text-2xl font-inter font-medium text-[#475367] mb-3 text-center"
+        style={theme.styles.mutedText}
+      >
         {title}
       </Text>
-      <Text className="text-[#98A2B3] font-inter text-center leading-6">
+      <Text
+        className="text-[#98A2B3] font-inter text-center leading-6"
+        style={theme.styles.subtleText}
+      >
         {description}
       </Text>
     </View>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 
+import { useAppTheme } from '../../theme/useAppTheme';
+
 interface ConfirmationModalProps {
   visible: boolean;
   onClose: () => void;
@@ -20,18 +22,28 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText = 'Submit',
   confirmVariant = 'primary'
 }) => {
+  const theme = useAppTheme();
   const confirmButtonClassName = confirmVariant === 'danger' ? 'bg-[#E32636]' : 'bg-[#0673FF]';
 
   return (
     <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-center items-center px-6">
-        <View className="bg-white rounded-3xl p-6 w-full items-start shadow-xl">
+        <View
+          className="bg-white rounded-3xl p-6 w-full items-start shadow-xl"
+          style={theme.styles.card}
+        >
           
-          <Text className="text-[18px] font-inter font-bold text-[#101928] mb-2 text-left">
+          <Text
+            className="text-[18px] font-inter font-bold text-[#101928] mb-2 text-left"
+            style={theme.styles.primaryText}
+          >
             {title}
           </Text>
           
-          <Text className="text-[#475367] font-inter text-[14px] text-left mb-3 leading-5">
+          <Text
+            className="text-[#475367] font-inter text-[14px] text-left mb-3 leading-5"
+            style={theme.styles.mutedText}
+          >
             {message}
           </Text>
 
@@ -39,8 +51,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <TouchableOpacity 
               onPress={onClose}
               className="h-12 min-w-[92px] px-5 rounded-xl border border-[#E4E7EC] items-center justify-center"
+              style={theme.styles.border}
             >
-              <Text className="font-inter font-medium text-[#475367]">Cancel</Text>
+              <Text
+                className="font-inter font-medium text-[#475367]"
+                style={theme.styles.mutedText}
+              >
+                Cancel
+              </Text>
             </TouchableOpacity>
             
             <TouchableOpacity 

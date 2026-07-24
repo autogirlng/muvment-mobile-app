@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+import { useAppTheme } from '../../theme/useAppTheme';
+
 interface LocationItemProps {
   title: string;
   address: string;
@@ -21,28 +23,45 @@ export const LocationItem: React.FC<LocationItemProps> = ({
   isExpanded = false,
   onToggle,
 }) => {
+  const theme = useAppTheme();
+  const iconColor = theme.styles.icon ?? '#98A2B3';
+  const dropdownSurfaceStyle = showDropdown ? theme.styles.card : undefined;
+
   const LocationContent = (
-    <View className={`flex-row items-center mb-2 ${
+    <View
+      className={`flex-row items-center mb-2 ${
       showDropdown ? 'border border-[#E4E7EC] rounded-xl p-4 bg-white justify-between' : ''
-    }`}>
+    }`}
+      style={dropdownSurfaceStyle}
+    >
       <View className="flex-row items-center flex-1">
-        <Feather name="map-pin" size={18} color="#98A2B3" className={!showDropdown ? "mt-0.5" : ""} />
+        <Feather name="map-pin" size={18} color={iconColor} className={!showDropdown ? "mt-0.5" : ""} />
         <Text 
           className="font-inter text-[#101928] text-[15px] ml-3 flex-1" 
           numberOfLines={showDropdown ? 1 : undefined}
+          style={theme.styles.primaryText}
         >
           {address}
         </Text>
       </View>
-      {showDropdown && <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color="#101928" />}
+      {showDropdown && (
+        <Feather
+          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={theme.isDark ? theme.colors.text : '#101928'}
+        />
+      )}
     </View>
   );
 
   return (
     <View className="mb-6">
-      <Text className={`font-inter uppercase mb-2 ${
+      <Text
+        className={`font-inter uppercase mb-2 ${
         showDropdown ? 'font-medium text-[13px] text-[#101928]' : 'font-semibold text-[13px] text-[#475367] tracking-wider'
-      }`}>
+      }`}
+        style={showDropdown ? theme.styles.primaryText : theme.styles.mutedText}
+      >
         {title}
       </Text>
       
@@ -53,21 +72,21 @@ export const LocationItem: React.FC<LocationItemProps> = ({
       ) : LocationContent}
 
       {showDropdown && isExpanded && details.length > 0 && (
-        <View className="border border-[#E4E7EC] rounded-xl bg-white p-4 mb-3">
-          <Text className="font-inter text-[#667185] text-[13px] mb-2">
+        <View className="border border-[#E4E7EC] rounded-xl bg-white p-4 mb-3" style={theme.styles.card}>
+          <Text className="font-inter text-[#667185] text-[13px] mb-2" style={theme.styles.mutedText}>
             Assigned address
           </Text>
-          <Text className="font-inter font-medium text-[#101928] text-[14px] mb-4">
+          <Text className="font-inter font-medium text-[#101928] text-[14px] mb-4" style={theme.styles.primaryText}>
             {address}
           </Text>
 
-          <Text className="font-inter text-[#667185] text-[13px] mb-2">
+          <Text className="font-inter text-[#667185] text-[13px] mb-2" style={theme.styles.mutedText}>
             Trip context
           </Text>
           {details.map((detail) => (
             <View key={detail} className="flex-row items-start mb-2">
               <View className="w-1.5 h-1.5 rounded-full bg-[#0673FF] mt-2 mr-2" />
-              <Text className="font-inter text-[#475367] text-[14px] flex-1">
+              <Text className="font-inter text-[#475367] text-[14px] flex-1" style={theme.styles.mutedText}>
                 {detail}
               </Text>
             </View>

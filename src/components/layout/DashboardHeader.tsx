@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCurrentUser } from '../../api/hooks/useUsers';
 import { NotificationBellButton } from '../notifications/NotificationBellButton';
 import { getUserInitials } from '../../utils/userProfile';
+import { useAppTheme } from '../../theme/useAppTheme';
 
 interface DashboardHeaderProps {
   title: string;
@@ -13,6 +14,7 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title }) => {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const currentUserQuery = useCurrentUser();
   const currentUser = currentUserQuery.data?.data;
   const userInitials = getUserInitials(currentUser);
@@ -25,7 +27,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title }) => {
           Platform.OS === 'android' ? Math.max(insets.top, 20) + 12 : 8,
       }}
     >
-      <Text className="text-3xl font-inter font-bold text-[#000000]">
+      <Text
+        className="text-3xl font-inter font-bold text-[#000000]"
+        style={theme.styles.primaryText}
+      >
         {title}
       </Text>
 

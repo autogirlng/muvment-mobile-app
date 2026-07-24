@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 
+import { useAppTheme } from '../../theme/useAppTheme';
+
 interface DropdownMenuProps {
   visible: boolean;
   options: string[];
@@ -18,6 +20,8 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   top = 100, // Fallback positions
   right = 20,
 }) => {
+  const theme = useAppTheme();
+
   return (
     <Modal
       visible={visible}
@@ -33,7 +37,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
       >
         <View 
           className="absolute bg-white rounded-2xl shadow-xl border border-[#E4E7EC] py-2 w-48"
-          style={{ top, right }}
+          style={[
+            { top, right },
+            theme.styles.card,
+          ]}
         >
           {options.map((option, index) => (
             <TouchableOpacity
@@ -41,7 +48,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
               onPress={() => onSelect(option)}
               className="px-5 py-3"
             >
-              <Text className="font-inter text-[#101928] text-[15px]">
+              <Text
+                className="font-inter text-[#101928] text-[15px]"
+                style={theme.styles.primaryText}
+              >
                 {option}
               </Text>
             </TouchableOpacity>
